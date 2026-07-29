@@ -13,6 +13,8 @@ import {
   ChevronRight,
   Circle,
 } from "lucide-react";
+import { useDeviceStore } from "../../stores/deviceStore";
+import { ConnectionBadge } from "../ui/ConnectionBadge";
 
 interface NavItem {
   to: string;
@@ -56,6 +58,7 @@ function NavEntry({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const connectionStatus = useDeviceStore((s) => s.connectionStatus);
 
   return (
     <aside
@@ -100,16 +103,26 @@ export function Sidebar() {
           }`}
           title={collapsed ? "Device" : undefined}
         >
-          <Circle size={10} className="shrink-0 text-[#16a34a]" />
-          {!collapsed && (
-            <div className="min-w-0">
-              <div className="truncate text-xs font-medium text-[#171717]">
-                Not connected
+          {collapsed ? (
+            <Circle
+              size={10}
+              className={`shrink-0 ${
+                connectionStatus === "connected"
+                  ? "text-[#16a34a]"
+                  : connectionStatus === "reconnecting"
+                    ? "text-[#ab6400]"
+                    : "text-[#dc2626]"
+              }`}
+            />
+          ) : (
+            <>
+              <ConnectionBadge status={connectionStatus} />
+              <div className="min-w-0">
+                <div className="truncate text-xs text-[#60646c]">
+                  Select device
+                </div>
               </div>
-              <div className="truncate text-xs text-[#60646c]">
-                Select device
-              </div>
-            </div>
+            </>
           )}
         </button>
       </div>
