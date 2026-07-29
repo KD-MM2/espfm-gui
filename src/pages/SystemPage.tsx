@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { api, type SystemInfo } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
+import { useToast } from "../stores/toastStore";
 
 function formatUptime(secs: number): string {
   const d = Math.floor(secs / 86400);
@@ -28,6 +29,7 @@ function formatBytes(bytes: number): string {
 
 export function SystemPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
+  const { showToast } = useToast();
   const [info, setInfo] = useState<SystemInfo | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -53,12 +55,12 @@ export function SystemPage() {
       const data = await api.getSystemInfo(activeDeviceId);
       setInfo(data);
       setHostname(data.hostname);
-    } catch {
-      // silently ignore — device may not be reachable
+    } catch (e) {
+      showToast(`Failed to get system info: ${String(e)}`, "error");
     } finally {
       setLoading(false);
     }
-  }, [activeDeviceId]);
+  }, [activeDeviceId, showToast]);
 
   useEffect(() => {
     fetchInfo();
@@ -70,8 +72,8 @@ export function SystemPage() {
     try {
       await api.setHostname(activeDeviceId, hostname.trim());
       await fetchInfo();
-    } catch {
-      // TODO: surface error toast
+    } catch (e) {
+      showToast(`Failed to set hostname: ${String(e)}`, "error");
     } finally {
       setSettingHostname(false);
     }
@@ -83,8 +85,8 @@ export function SystemPage() {
     try {
       await api.rebootDevice(activeDeviceId);
       setShowRebootDialog(false);
-    } catch {
-      // TODO: surface error toast
+    } catch (e) {
+      showToast(`Failed to reboot device: ${String(e)}`, "error");
     } finally {
       setRebooting(false);
     }
@@ -96,8 +98,8 @@ export function SystemPage() {
     try {
       const config = await api.exportConfig(activeDeviceId);
       setExportedConfig(config);
-    } catch {
-      // TODO: surface error toast
+    } catch (e) {
+      showToast(`Failed to export config: ${String(e)}`, "error");
     } finally {
       setExporting(false);
     }
@@ -130,8 +132,8 @@ export function SystemPage() {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-    } catch {
-      // TODO: surface error toast
+    } catch (e) {
+      showToast(`Failed to import config: ${String(e)}`, "error");
     } finally {
       setImporting(false);
     }

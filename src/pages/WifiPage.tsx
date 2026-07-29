@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback } from "react";
 import { Wifi, WifiOff, RefreshCw, Loader2 } from "lucide-react";
 import { api, type WifiAp, type WifiStatus } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
+import { useToast } from "../stores/toastStore";
 
 export function WifiPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
+  const { showToast } = useToast();
   const [scanResults, setScanResults] = useState<WifiAp[]>([]);
   const [wifiStatus, setWifiStatus] = useState<WifiStatus | null>(null);
   const [scanning, setScanning] = useState(false);
@@ -17,10 +19,10 @@ export function WifiPage() {
     try {
       const status = await api.wifiStatus(activeDeviceId);
       setWifiStatus(status);
-    } catch {
-      // silently ignore — device may not be reachable
+    } catch (e) {
+      showToast(`Failed to get WiFi status: ${String(e)}`, "error");
     }
-  }, [activeDeviceId]);
+  }, [activeDeviceId, showToast]);
 
   useEffect(() => {
     fetchStatus();
@@ -32,8 +34,8 @@ export function WifiPage() {
     try {
       const results = await api.wifiScan(activeDeviceId);
       setScanResults(results);
-    } catch {
-      // TODO: surface error toast
+    } catch (e) {
+      showToast(`WiFi scan failed: ${String(e)}`, "error");
     } finally {
       setScanning(false);
     }
@@ -48,8 +50,8 @@ export function WifiPage() {
       await fetchStatus();
       setSsid("");
       setPassword("");
-    } catch {
-      // TODO: surface error toast
+    } catch (e) {
+      showToast(`WiFi connect failed: ${String(e)}`, "error");
     } finally {
       setConnecting(false);
     }
@@ -228,6 +230,9 @@ export function WifiPage() {
                   <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
                     Channel
                   </th>
+                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
+                    Auth
+                  </th>
                   <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]"></th>
                   <th className="px-4 py-2.5"></th>
                 </tr>
@@ -266,6 +271,9 @@ export function WifiPage() {
                     </td>
                     <td className="px-4 py-2.5 text-xs text-[#60646c]">
                       {ap.channel}
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-[#60646c]">
+                      {ap.authmode}
                     </td>
                     <td className="px-4 py-2.5">
                       <button

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { ScheduleState } from "../../lib/api";
+import type { ScheduleState, FanState } from "../../lib/api";
 
 function minutesToHHMM(min: number): string {
   const h = Math.floor(min / 60);
@@ -22,12 +22,14 @@ interface ScheduleFormProps {
   }) => void;
   onCancel: () => void;
   initialData?: ScheduleState | null;
+  fans?: FanState[];
 }
 
 export function ScheduleForm({
   onSubmit,
   onCancel,
   initialData,
+  fans = [],
 }: ScheduleFormProps) {
   const [fanId, setFanId] = useState<number>(initialData?.fan_id ?? 0);
   const [duty, setDuty] = useState<number>(initialData?.duty ?? 50);
@@ -72,25 +74,35 @@ export function ScheduleForm({
         </h2>
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {/* Fan ID */}
+          {/* Fan */}
           <div>
             <label
               htmlFor="schedule-fan-id"
               className="mb-1 block text-xs font-medium text-[#60646c]"
             >
-              Fan ID (0&ndash;7)
+              Fan
             </label>
-            <input
+            <select
               id="schedule-fan-id"
-              type="number"
-              min={0}
-              max={7}
               value={fanId}
               onChange={(e) => setFanId(Number(e.target.value))}
               className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
-              required
               autoFocus
-            />
+            >
+              {fans.length > 0 ? (
+                fans.map((f) => (
+                  <option key={f.slot} value={f.slot}>
+                    {f.name} (slot {f.slot})
+                  </option>
+                ))
+              ) : (
+                Array.from({ length: 8 }, (_, i) => (
+                  <option key={i} value={i}>
+                    Fan {i}
+                  </option>
+                ))
+              )}
+            </select>
           </div>
 
           {/* Duty */}

@@ -78,6 +78,11 @@ function FanCard({
                   inv
                 </span>
               )}
+              {fan.alarm !== "none" && (
+                <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-700">
+                  {fan.alarm === "stall" ? "Stall" : "Overtemp"}
+                </span>
+              )}
             </div>
           </div>
         </div>

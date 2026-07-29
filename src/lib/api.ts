@@ -14,6 +14,7 @@ export interface FanState {
   curve_id: number;
   schedule_id: number;
   group_id: number;
+  alarm: string;
 }
 export interface SourceState {
   slot: number;
@@ -21,6 +22,8 @@ export interface SourceState {
   source_type: string;
   temp_c: number;
   rom_code: string | null;
+  status: string;
+  gpio: number;
 }
 export interface CurveState {
   slot: number;
@@ -49,6 +52,7 @@ export interface WifiAp {
   ssid: string;
   rssi: number;
   channel: number;
+  authmode: string;
 }
 export interface WifiStatus {
   connected: boolean;
@@ -98,6 +102,8 @@ export const api = {
     invoke("delete_source", { deviceId, slot }),
   scanDs18b20: (deviceId: number) =>
     invoke<Ds18b20Device[]>("scan_ds18b20", { deviceId }),
+  configDs18b20: (deviceId: number, gpio: number) =>
+    invoke("config_ds18b20", { deviceId, gpio }),
   updateManualTemp: (deviceId: number, slot: number, tempC: number) =>
     invoke("update_manual_temp", { deviceId, slot, tempC }),
   getCurves: (deviceId: number) =>
@@ -129,11 +135,11 @@ export const api = {
     deviceId: number,
     slot: number,
     req: {
-      fan_id: number;
-      duty: number;
-      start_min: number;
-      end_min: number;
-      enabled: boolean;
+      fan_id?: number;
+      duty?: number;
+      start_min?: number;
+      end_min?: number;
+      enabled?: boolean;
     }
   ) => invoke<ScheduleState>("update_schedule", { deviceId, slot, req }),
   deleteSchedule: (deviceId: number, slot: number) =>

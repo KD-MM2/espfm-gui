@@ -24,6 +24,7 @@ pub struct FanState {
     pub curve_id: u32,
     pub schedule_id: u32,
     pub group_id: u32,
+    pub alarm: String,
 }
 
 impl From<proto::FanInfo> for FanState {
@@ -31,6 +32,12 @@ impl From<proto::FanInfo> for FanState {
         let mode = match proto::FanMode::try_from(f.mode) {
             Ok(proto::FanMode::Auto) => "auto",
             _ => "manual",
+        }
+        .to_string();
+        let alarm = match proto::FanAlarm::try_from(f.alarm) {
+            Ok(proto::FanAlarm::Stall) => "stall",
+            Ok(proto::FanAlarm::Overtemp) => "overtemp",
+            _ => "none",
         }
         .to_string();
         Self {
@@ -47,6 +54,7 @@ impl From<proto::FanInfo> for FanState {
             curve_id: f.curve_id,
             schedule_id: f.schedule_id,
             group_id: f.group_id,
+            alarm,
         }
     }
 }
@@ -59,6 +67,8 @@ pub struct TempSource {
     pub source_type: String,
     pub temp_c: f32,
     pub rom_code: Option<String>,
+    pub status: String,
+    pub gpio: u32,
 }
 
 impl From<proto::SourceInfo> for TempSource {
@@ -68,6 +78,14 @@ impl From<proto::SourceInfo> for TempSource {
             Ok(proto::SourceType::Ds18b20) => "DS18B20",
             Ok(proto::SourceType::Manual) => "Manual",
             _ => "Unknown",
+        }
+        .to_string();
+
+        let status = match proto::SourceStatus::try_from(s.status) {
+            Ok(proto::SourceStatus::Valid) => "valid",
+            Ok(proto::SourceStatus::Stale) => "stale",
+            Ok(proto::SourceStatus::Invalid) => "invalid",
+            _ => "valid",
         }
         .to_string();
 
@@ -83,6 +101,8 @@ impl From<proto::SourceInfo> for TempSource {
             source_type,
             temp_c: s.temp_c,
             rom_code,
+            status,
+            gpio: s.gpio,
         }
     }
 }
@@ -171,20 +191,38 @@ impl From<proto::SystemInfo> for SystemInfo {
     }
 }
 
+/// WiFi auth mode labels, matching ESP-IDF wifi_auth_mode_t values.
+const WIFI_AUTH_LABELS: [&str; 8] = [
+    "OPEN",
+    "WEP",
+    "WPA_PSK",
+    "WPA2_PSK",
+    "WPA_WPA2_PSK",
+    "ENTERPRISE",
+    "WPA3_PSK",
+    "WPA2_WPA3_PSK",
+];
+
 /// A WiFi access point seen during scan.
 #[derive(Debug, Clone)]
 pub struct WifiAp {
     pub ssid: String,
     pub rssi: i32,
     pub channel: u32,
+    pub authmode: String,
 }
 
 impl From<proto::WifiApRecord> for WifiAp {
     fn from(ap: proto::WifiApRecord) -> Self {
+        let authmode = WIFI_AUTH_LABELS
+            .get(ap.authmode as usize)
+            .unwrap_or(&"UNKNOWN")
+            .to_string();
         Self {
             ssid: ap.ssid,
             rssi: ap.rssi,
             channel: ap.channel,
+            authmode,
         }
     }
 }

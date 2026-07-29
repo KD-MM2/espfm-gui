@@ -15,7 +15,6 @@ export function SourcesPage() {
   const [sources, setSources] = useState<SourceState[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
-  const [editingSource, setEditingSource] = useState<SourceState | null>(null);
 
   const fetchSources = useCallback(async () => {
     if (activeDeviceId == null) return;
@@ -29,6 +28,8 @@ export function SourcesPage() {
 
   useEffect(() => {
     fetchSources();
+    const interval = setInterval(fetchSources, 5000);
+    return () => clearInterval(interval);
   }, [fetchSources]);
 
   async function handleCreate(data: {
@@ -49,6 +50,7 @@ export function SourcesPage() {
 
   async function handleDelete(source: SourceState) {
     if (activeDeviceId == null) return;
+    if (!confirm(`Delete source "${source.name}"?`)) return;
     try {
       await api.deleteSource(activeDeviceId, source.slot);
       setSources((prev) => prev.filter((s) => s.slot !== source.slot));
@@ -57,29 +59,30 @@ export function SourcesPage() {
     }
   }
 
-  function handleEdit(source: SourceState) {
-    setEditingSource(source);
-    setShowForm(true);
-  }
-
   function handleFormSubmit(data: {
     name: string;
     source_type: string;
     gpio?: number;
     rom_code?: string;
   }) {
-    if (editingSource) {
-      // Edit mode — delete + recreate is not supported; close form
-      closeForm();
-    } else {
-      handleCreate(data);
+    handleCreate(data);
+  }
+
+  async function handleSetManualTemp(source: SourceState, tempC: number) {
+    if (activeDeviceId == null) return;
+    try {
+      await api.updateManualTemp(activeDeviceId, source.slot, tempC);
+      setSources((prev) =>
+        prev.map((s) => (s.slot === source.slot ? { ...s, temp_c: tempC } : s))
+      );
+    } catch (err) {
+      showToast(`Failed to set temperature: ${String(err)}`, "error");
     }
   }
 
   function handleAssignFromScanner(device: Ds18b20Device) {
     setShowScanner(false);
     // Pre-fill form with scanned device data
-    setEditingSource(null);
     setShowForm(true);
     // We need to pass rom_code to the form — use a ref or state
     // For simplicity, create directly
@@ -100,7 +103,6 @@ export function SourcesPage() {
 
   function closeForm() {
     setShowForm(false);
-    setEditingSource(null);
   }
 
   return (
@@ -124,10 +126,7 @@ export function SourcesPage() {
           </button>
           <button
             type="button"
-            onClick={() => {
-              setEditingSource(null);
-              setShowForm(true);
-            }}
+            onClick={() => setShowForm(true)}
             disabled={sources.length >= MAX_SOURCE_SLOTS}
             className="flex items-center gap-1.5 rounded-md bg-[#171717] px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
           >
@@ -140,12 +139,9 @@ export function SourcesPage() {
       {/* Source list */}
       <SourceList
         sources={sources}
-        onEdit={handleEdit}
         onDelete={handleDelete}
-        onCreateFirst={() => {
-          setEditingSource(null);
-          setShowForm(true);
-        }}
+        onCreateFirst={() => setShowForm(true)}
+        onSetManualTemp={handleSetManualTemp}
       />
 
       {/* Form modal */}
@@ -153,7 +149,6 @@ export function SourcesPage() {
         <SourceForm
           onSubmit={handleFormSubmit}
           onCancel={closeForm}
-          initialData={editingSource}
         />
       )}
 

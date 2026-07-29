@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
-import { api, type ScheduleState } from "../lib/api";
+import { api, type ScheduleState, type FanState } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "../stores/toastStore";
 import { ScheduleList } from "../components/schedules/ScheduleList";
@@ -12,6 +12,7 @@ export function SchedulesPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
   const { showToast } = useToast();
   const [schedules, setSchedules] = useState<ScheduleState[]>([]);
+  const [fans, setFans] = useState<FanState[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<ScheduleState | null>(
     null
@@ -27,9 +28,20 @@ export function SchedulesPage() {
     }
   }, [activeDeviceId]);
 
+  const fetchFans = useCallback(async () => {
+    if (activeDeviceId == null) return;
+    try {
+      const data = await api.getFans(activeDeviceId);
+      setFans(data);
+    } catch (err) {
+      // Non-critical; fan names will fall back to slot IDs
+    }
+  }, [activeDeviceId]);
+
   useEffect(() => {
     fetchSchedules();
-  }, [fetchSchedules]);
+    fetchFans();
+  }, [fetchSchedules, fetchFans]);
 
   async function handleCreate(data: {
     fan_id: number;
@@ -60,7 +72,13 @@ export function SchedulesPage() {
       const updated = await api.updateSchedule(
         activeDeviceId,
         editingSchedule.slot,
-        data
+        {
+          fan_id: data.fan_id,
+          duty: data.duty,
+          start_min: data.start_min,
+          end_min: data.end_min,
+          enabled: data.enabled,
+        }
       );
       setSchedules((prev) =>
         prev.map((s) => (s.slot === updated.slot ? updated : s))
@@ -73,6 +91,7 @@ export function SchedulesPage() {
 
   async function handleDelete(schedule: ScheduleState) {
     if (activeDeviceId == null) return;
+    if (!confirm("Delete this schedule?")) return;
     try {
       await api.deleteSchedule(activeDeviceId, schedule.slot);
       setSchedules((prev) => prev.filter((s) => s.slot !== schedule.slot));
@@ -87,13 +106,7 @@ export function SchedulesPage() {
       const updated = await api.updateSchedule(
         activeDeviceId,
         schedule.slot,
-        {
-          fan_id: schedule.fan_id,
-          duty: schedule.duty,
-          start_min: schedule.start_min,
-          end_min: schedule.end_min,
-          enabled: !schedule.enabled,
-        }
+        { enabled: !schedule.enabled }
       );
       setSchedules((prev) =>
         prev.map((s) => (s.slot === updated.slot ? updated : s))
@@ -168,6 +181,7 @@ export function SchedulesPage() {
           onSubmit={handleFormSubmit}
           onCancel={closeForm}
           initialData={editingSchedule}
+          fans={fans}
         />
       )}
     </div>

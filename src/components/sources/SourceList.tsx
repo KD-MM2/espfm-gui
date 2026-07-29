@@ -1,29 +1,40 @@
-import { Thermometer, Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Thermometer, Trash2 } from "lucide-react";
 import type { SourceState } from "../../lib/api";
 import { EmptyState } from "../ui/EmptyState";
 
 interface SourceListProps {
   sources: SourceState[];
-  onEdit: (source: SourceState) => void;
   onDelete: (source: SourceState) => void;
   onCreateFirst: () => void;
+  onSetManualTemp?: (source: SourceState, tempC: number) => void;
 }
 
 function SourceCard({
   source,
-  onEdit,
   onDelete,
+  onSetManualTemp,
 }: {
   source: SourceState;
-  onEdit: (source: SourceState) => void;
   onDelete: (source: SourceState) => void;
+  onSetManualTemp?: (source: SourceState, tempC: number) => void;
 }) {
+  const [manualTempInput, setManualTempInput] = useState(
+    source.temp_c.toFixed(1)
+  );
   const typeLabel =
     source.source_type === "DS18B20"
       ? "DS18B20"
       : source.source_type === "NTC"
         ? "NTC"
         : "Manual";
+
+  const statusColor =
+    source.status === "valid"
+      ? "bg-green-50 text-green-700"
+      : source.status === "stale"
+        ? "bg-yellow-50 text-yellow-700"
+        : "bg-red-50 text-red-700";
 
   return (
     <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
@@ -36,15 +47,48 @@ function SourceCard({
             <span className="shrink-0 rounded-full bg-[#f0f0f3] px-2 py-0.5 text-[10px] font-medium text-[#60646c]">
               {typeLabel}
             </span>
+            <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColor}`}>
+              {source.status}
+            </span>
           </div>
 
           <div className="mt-2 space-y-1">
-            <div className="text-xs text-[#60646c]">
-              <span className="font-medium text-[#171717]">
-                {source.temp_c.toFixed(1)}
-              </span>{" "}
-              °C
-            </div>
+            {source.source_type === "Manual" && onSetManualTemp ? (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={manualTempInput}
+                    onChange={(e) => setManualTempInput(e.target.value)}
+                    className="w-20 rounded-md border border-[#dcdee0] bg-white px-2 py-1 text-xs text-[#171717] outline-none focus:border-[#171717]"
+                  />
+                  <span className="text-xs text-[#60646c]">°C</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const val = parseFloat(manualTempInput);
+                    if (!isNaN(val)) onSetManualTemp(source, val);
+                  }}
+                  className="rounded-md bg-[#171717] px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-[#2a2a2a]"
+                >
+                  Set
+                </button>
+              </div>
+            ) : (
+              <div className="text-xs text-[#60646c]">
+                <span className="font-medium text-[#171717]">
+                  {source.temp_c.toFixed(1)}
+                </span>{" "}
+                °C
+              </div>
+            )}
+            {source.gpio < 255 && (
+              <div className="text-xs text-[#60646c]">
+                <span className="font-medium">GPIO</span> {source.gpio}
+              </div>
+            )}
             {source.rom_code && (
               <div className="text-xs text-[#60646c]">
                 <span className="font-medium">ROM</span>{" "}
@@ -55,14 +99,6 @@ function SourceCard({
         </div>
 
         <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onEdit(source)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#f0f0f3]"
-            title="Edit source"
-          >
-            <Pencil size={16} />
-          </button>
           <button
             type="button"
             onClick={() => onDelete(source)}
@@ -79,9 +115,9 @@ function SourceCard({
 
 export function SourceList({
   sources,
-  onEdit,
   onDelete,
   onCreateFirst,
+  onSetManualTemp,
 }: SourceListProps) {
   if (sources.length === 0) {
     return (
@@ -101,8 +137,8 @@ export function SourceList({
         <SourceCard
           key={source.slot}
           source={source}
-          onEdit={onEdit}
           onDelete={onDelete}
+          onSetManualTemp={onSetManualTemp}
         />
       ))}
     </div>

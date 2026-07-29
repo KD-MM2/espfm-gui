@@ -18,6 +18,10 @@ function CurveCard({
   onEdit: (curve: CurveState) => void;
   onDelete: (curve: CurveState) => void;
 }) {
+  const pointsSummary = curve.points
+    .map((p) => `${p.temp_c}C:${p.duty}%`)
+    .join(", ");
+
   return (
     <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
       <div className="flex items-start justify-between">
@@ -29,6 +33,9 @@ function CurveCard({
             <span className="shrink-0 rounded-full bg-[#f0f0f3] px-2 py-0.5 text-[10px] font-medium text-[#60646c]">
               {curve.points.length} {curve.points.length === 1 ? "point" : "points"}
             </span>
+          </div>
+          <div className="mt-2 text-xs text-[#60646c] font-mono">
+            {pointsSummary}
           </div>
         </div>
 

@@ -107,31 +107,41 @@ export function FanForm({ onSubmit, onCancel, initialData }: FanFormProps) {
               <label htmlFor="fan-pwm" className="mb-1 block text-xs font-medium text-[#60646c]">
                 PWM GPIO
               </label>
-              <select
+              <input
                 id="fan-pwm"
+                type="number"
+                min={0}
+                max={48}
+                list="pwm-gpio-suggestions"
                 value={pwmGpio}
                 onChange={(e) => setPwmGpio(Number(e.target.value))}
                 className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none focus:border-[#171717]"
-              >
+              />
+              <datalist id="pwm-gpio-suggestions">
                 {PWM_GPIO_OPTIONS.map((g) => (
-                  <option key={g} value={g}>GPIO {g}</option>
+                  <option key={g} value={g} label={`GPIO ${g}`} />
                 ))}
-              </select>
+              </datalist>
             </div>
             <div>
               <label htmlFor="fan-tach" className="mb-1 block text-xs font-medium text-[#60646c]">
                 Tach GPIO
               </label>
-              <select
+              <input
                 id="fan-tach"
+                type="number"
+                min={0}
+                max={48}
+                list="tach-gpio-suggestions"
                 value={tachGpio}
                 onChange={(e) => setTachGpio(Number(e.target.value))}
                 className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none focus:border-[#171717]"
-              >
+              />
+              <datalist id="tach-gpio-suggestions">
                 {TACH_GPIO_OPTIONS.map((g) => (
-                  <option key={g} value={g}>GPIO {g}</option>
+                  <option key={g} value={g} label={`GPIO ${g}`} />
                 ))}
-              </select>
+              </datalist>
             </div>
           </div>
 

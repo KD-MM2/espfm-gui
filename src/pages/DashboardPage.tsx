@@ -2,7 +2,15 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { FanTempChart, type ChartDataPoint } from "../components/dashboard/FanTempChart";
 import { SystemInfoCard } from "../components/dashboard/SystemInfoCard";
 import { ActivityLog, type ActivityEntry } from "../components/dashboard/ActivityLog";
-import { api, type FanState, type SystemInfo } from "../lib/api";
+import {
+  api,
+  type FanState,
+  type SystemInfo,
+  type SourceState,
+  type CurveState,
+  type ScheduleState,
+  type WifiStatus,
+} from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
 
 type TimeRange = "30m" | "1h" | "6h" | "24h";
@@ -20,6 +28,10 @@ export function DashboardPage() {
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [sources, setSources] = useState<SourceState[]>([]);
+  const [curves, setCurves] = useState<CurveState[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleState[]>([]);
+  const [wifiStatus, setWifiStatus] = useState<WifiStatus | null>(null);
   const activityIdRef = useRef(0);
   const prevFansRef = useRef<Map<number, FanState>>(new Map());
 
@@ -81,6 +93,25 @@ export function DashboardPage() {
     }
   }, [activeDeviceId]);
 
+  const fetchAdditionalData = useCallback(async () => {
+    if (!activeDeviceId) return;
+    try {
+      const [src, crv, sch, wifi] = await Promise.all([
+        api.getSources(activeDeviceId),
+        api.getCurves(activeDeviceId),
+        api.getSchedules(activeDeviceId),
+        api.wifiStatus(activeDeviceId),
+      ]);
+      setSources(src);
+      setCurves(crv);
+      setSchedules(sch);
+      setWifiStatus(wifi);
+    } catch (e) {
+      // Non-critical — dashboard still shows fans and system info
+      console.warn("Dashboard additional data fetch failed:", e);
+    }
+  }, [activeDeviceId]);
+
   // Fetch on mount and poll
   useEffect(() => {
     if (!activeDeviceId) return;
@@ -88,16 +119,19 @@ export function DashboardPage() {
     // Initial fetch
     fetchFanData();
     fetchSystemInfo();
+    fetchAdditionalData();
 
-    // Poll fans every 2s, system info every 30s
+    // Poll fans every 2s, system info every 30s, additional data every 10s
     const fanInterval = setInterval(fetchFanData, 2000);
     const sysInterval = setInterval(fetchSystemInfo, 30000);
+    const extraInterval = setInterval(fetchAdditionalData, 10000);
 
     return () => {
       clearInterval(fanInterval);
       clearInterval(sysInterval);
+      clearInterval(extraInterval);
     };
-  }, [activeDeviceId, fetchFanData, fetchSystemInfo]);
+  }, [activeDeviceId, fetchFanData, fetchSystemInfo, fetchAdditionalData]);
 
   // Format uptime
   function formatUptime(secs: number): string {
@@ -172,6 +206,156 @@ export function DashboardPage() {
             status={sysStatus}
           />
           <ActivityLog entries={activity} />
+        </div>
+      </div>
+
+      {/* Bottom row: sources, curves, schedules, WiFi */}
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Sources */}
+        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
+          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+            Sources
+            {sources.length > 0 && (
+              <span className="ml-1.5 text-xs font-normal text-[#60646c]">
+                ({sources.length})
+              </span>
+            )}
+          </h2>
+          {sources.length > 0 ? (
+            <div className="space-y-2">
+              {sources.map((s) => (
+                <div
+                  key={s.slot}
+                  className="flex items-center justify-between"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-medium text-[#171717]">
+                      {s.name}
+                    </div>
+                    <div className="text-[10px] text-[#60646c]">
+                      {s.source_type} &middot; {s.status}
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-xs font-medium text-[#171717]">
+                    {s.temp_c.toFixed(1)} °C
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-[#999]">No sources</p>
+          )}
+        </div>
+
+        {/* Curves */}
+        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
+          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+            Curves
+            {curves.length > 0 && (
+              <span className="ml-1.5 text-xs font-normal text-[#60646c]">
+                ({curves.length})
+              </span>
+            )}
+          </h2>
+          {curves.length > 0 ? (
+            <div className="space-y-2">
+              {curves.map((c) => (
+                <div
+                  key={c.slot}
+                  className="flex items-center justify-between"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-medium text-[#171717]">
+                      {c.name}
+                    </div>
+                  </div>
+                  <span className="shrink-0 text-[10px] text-[#60646c]">
+                    {c.points.length} pts
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-[#999]">No curves</p>
+          )}
+        </div>
+
+        {/* Schedules */}
+        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
+          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+            Schedules
+            {schedules.length > 0 && (
+              <span className="ml-1.5 text-xs font-normal text-[#60646c]">
+                ({schedules.length})
+              </span>
+            )}
+          </h2>
+          {schedules.length > 0 ? (
+            <div className="space-y-2">
+              {schedules.map((sch) => (
+                <div
+                  key={sch.slot}
+                  className="flex items-center justify-between"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-xs font-medium text-[#171717]">
+                      Fan {sch.fan_id} &middot; {sch.duty}%
+                    </div>
+                    <div className="text-[10px] text-[#60646c]">
+                      {Math.floor(sch.start_min / 60)}:
+                      {String(sch.start_min % 60).padStart(2, "0")} –{" "}
+                      {Math.floor(sch.end_min / 60)}:
+                      {String(sch.end_min % 60).padStart(2, "0")}
+                    </div>
+                  </div>
+                  <span
+                    className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                      sch.enabled
+                        ? "bg-green-50 text-green-700"
+                        : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {sch.enabled ? "on" : "off"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-[#999]">No schedules</p>
+          )}
+        </div>
+
+        {/* WiFi Status */}
+        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
+          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+            WiFi
+          </h2>
+          {wifiStatus ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-[#60646c]">Status</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                    wifiStatus.connected
+                      ? "bg-green-50 text-green-700"
+                      : "bg-red-50 text-red-700"
+                  }`}
+                >
+                  {wifiStatus.connected ? "Connected" : "Disconnected"}
+                </span>
+              </div>
+              {wifiStatus.connected && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#60646c]">IP</span>
+                  <span className="text-xs font-mono font-medium text-[#171717]">
+                    {wifiStatus.ip}
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-xs text-[#999]">Loading...</p>
+          )}
         </div>
       </div>
     </div>

@@ -107,6 +107,7 @@ export function FansPage() {
 
   async function handleDelete(fan: FanState) {
     if (activeDeviceId == null) return;
+    if (!confirm(`Delete fan "${fan.name}"?`)) return;
     try {
       await api.deleteFan(activeDeviceId, fan.slot);
       setFans((prev) => prev.filter((f) => f.slot !== fan.slot));

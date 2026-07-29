@@ -20,6 +20,7 @@ pub fn run() {
             commands::create_source,
             commands::delete_source,
             commands::scan_ds18b20,
+            commands::config_ds18b20,
             commands::update_manual_temp,
             commands::get_curves,
             commands::create_curve,

@@ -90,6 +90,7 @@ export function CurvesPage() {
 
   async function handleDelete(curve: CurveState) {
     if (activeDeviceId == null) return;
+    if (!confirm(`Delete curve "${curve.name}"?`)) return;
     try {
       await api.deleteCurve(activeDeviceId, curve.slot);
       setCurves((prev) => prev.filter((c) => c.slot !== curve.slot));

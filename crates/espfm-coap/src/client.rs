@@ -165,6 +165,12 @@ impl CoapClient {
         Ok(resp.devices.into_iter().map(Ds18b20Device::from).collect())
     }
 
+    pub async fn config_ds18b20(&self, gpio: u32) -> Result<(), CoapError> {
+        let req = proto::Ds18b20ConfigRequest { gpio };
+        self.put("ds18b20/config", &req).await?;
+        Ok(())
+    }
+
     // ── Curve endpoints ──────────────────────────────────────────────
 
     pub async fn get_curves(&self) -> Result<Vec<CurveInfo>, CoapError> {
@@ -297,6 +303,8 @@ fn map_io_error(e: std::io::Error) -> CoapError {
 }
 
 fn check_status(resp: &coap_lite::CoapResponse) -> Result<(), CoapError> {
+    use prost::Message;
+
     let status = resp.get_status();
     match status {
         Status::Content
@@ -304,6 +312,18 @@ fn check_status(resp: &coap_lite::CoapResponse) -> Result<(), CoapError> {
         | Status::Deleted
         | Status::Changed
         | Status::Valid => Ok(()),
+        Status::BadRequest => {
+            // Try to decode StatusResponse from payload to extract device error message
+            if let Ok(sr) = proto::StatusResponse::decode(resp.message.payload.as_slice()) {
+                if !sr.error_msg.is_empty() {
+                    return Err(CoapError::RequestFailed(format!(
+                        "Bad request: {}",
+                        sr.error_msg
+                    )));
+                }
+            }
+            Err(CoapError::RequestFailed("Bad request (4.00)".into()))
+        }
         _ => Err(CoapError::RequestFailed(format!(
             "{:?}: {}",
             status,

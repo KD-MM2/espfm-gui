@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { api, type Ds18b20Device } from "../../lib/api";
+import { useToast } from "../../stores/toastStore";
 
 interface Ds18b20ScannerProps {
   deviceId: number;
@@ -13,9 +14,12 @@ export function Ds18b20Scanner({
   onAssign,
   onClose,
 }: Ds18b20ScannerProps) {
+  const { showToast } = useToast();
   const [devices, setDevices] = useState<Ds18b20Device[]>([]);
   const [scanning, setScanning] = useState(false);
   const [scanned, setScanned] = useState(false);
+  const [busGpio, setBusGpio] = useState("");
+  const [configuring, setConfiguring] = useState(false);
 
   async function handleScan() {
     setScanning(true);
@@ -24,10 +28,27 @@ export function Ds18b20Scanner({
       const results = await api.scanDs18b20(deviceId);
       setDevices(results);
       setScanned(true);
-    } catch {
-      // TODO: surface error toast
+    } catch (e) {
+      showToast(`DS18B20 scan failed: ${String(e)}`, "error");
     } finally {
       setScanning(false);
+    }
+  }
+
+  async function handleConfigureGpio() {
+    const gpio = parseInt(busGpio, 10);
+    if (isNaN(gpio) || gpio < 0 || gpio > 48) {
+      showToast("Invalid GPIO pin number", "error");
+      return;
+    }
+    setConfiguring(true);
+    try {
+      await api.configDs18b20(deviceId, gpio);
+      showToast(`DS18B20 bus GPIO set to ${gpio}`, "success");
+    } catch (e) {
+      showToast(`Failed to configure DS18B20 GPIO: ${String(e)}`, "error");
+    } finally {
+      setConfiguring(false);
     }
   }
 
@@ -44,7 +65,38 @@ export function Ds18b20Scanner({
           DS18B20 Scanner
         </h2>
 
-        <div className="mt-4">
+        <div className="mt-4 space-y-3">
+          {/* Bus GPIO configuration */}
+          <div className="flex items-end gap-2">
+            <div className="flex-1">
+              <label
+                htmlFor="ds18b20-bus-gpio"
+                className="mb-1 block text-xs font-medium text-[#60646c]"
+              >
+                Bus GPIO
+              </label>
+              <input
+                id="ds18b20-bus-gpio"
+                type="number"
+                min="0"
+                max="48"
+                value={busGpio}
+                onChange={(e) => setBusGpio(e.target.value)}
+                placeholder="e.g. 4"
+                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleConfigureGpio}
+              disabled={configuring || !busGpio.trim()}
+              className="flex items-center gap-1.5 rounded-md border border-[#dcdee0] bg-white px-3.5 py-2 text-sm font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {configuring ? "Setting..." : "Configure"}
+            </button>
+          </div>
+
+          {/* Scan button */}
           <button
             type="button"
             onClick={handleScan}
