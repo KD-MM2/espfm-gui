@@ -26,7 +26,14 @@ export const useDeviceStore = create<DeviceStore>((set) => ({
   connectionStatus: "disconnected",
   setDevices: (devices) => set({ devices }),
   addDevice: (device) =>
-    set((state) => ({ devices: [...state.devices, device] })),
+    set((state) => {
+      // Deduplicate by IP address — don't add if already exists
+      const exists = state.devices.some(
+        (d) => d.ipAddress === device.ipAddress
+      );
+      if (exists) return state;
+      return { devices: [...state.devices, device] };
+    }),
   removeDevice: (id) =>
     set((state) => ({
       devices: state.devices.filter((d) => d.id !== id),

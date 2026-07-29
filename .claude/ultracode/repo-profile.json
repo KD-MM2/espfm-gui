@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-29",
+  "stack": {
+    "language": "typescript",
+    "frameworks": ["react", "tauri"],
+    "buildTool": "pnpm"
+  },
+  "commands": {
+    "build": "pnpm run build",
+    "test": null,
+    "testOne": null,
+    "format": null,
+    "lint": null,
+    "typecheck": "tsc --noEmit",
+    "run": "pnpm run dev"
+  },
+  "testFramework": null,
+  "moduleMap": [
+    { "glob": "src/pages/**", "area": "pages", "reference": null },
+    { "glob": "src/components/fans/**,src/components/sources/**,src/components/curves/**,src/components/schedules/**", "area": "domain-components", "reference": null },
+    { "glob": "src/components/dashboard/**,src/components/layout/**,src/components/ui/**,src/components/logs/**,src/components/devices/**,src/components/system/**,src/components/wifi/**", "area": "shared-components", "reference": null },
+    { "glob": "src/stores/**", "area": "stores", "reference": null },
+    { "glob": "src/lib/**", "area": "lib", "reference": null },
+    { "glob": "src-tauri/src/**", "area": "tauri-backend", "reference": null },
+    { "glob": "crates/espfm-coap/src/**,crates/espfm-store/src/**,crates/espfm-mdns/src/**", "area": "rust-crates", "reference": null }
+  ],
+  "skills": [
+    { "name": "convention", "kind": "convention", "path": ".claude/skills/convention/SKILL.md", "componentType": null, "source": "generated" },
+    { "name": "module-hub", "kind": "module-hub", "path": ".claude/skills/module-hub/SKILL.md", "componentType": null, "source": "generated" },
+    { "name": "tauri-command", "kind": "creation", "path": ".claude/skills/tauri-command/SKILL.md", "componentType": "tauri-command", "source": "generated" },
+    { "name": "dto-struct", "kind": "creation", "path": ".claude/skills/dto-struct/SKILL.md", "componentType": "dto-struct", "source": "generated" },
+    { "name": "rust-domain-types", "kind": "creation", "path": ".claude/skills/rust-domain-types/SKILL.md", "componentType": "rust-domain-types", "source": "generated" },
+    { "name": "page", "kind": "creation", "path": ".claude/skills/page/SKILL.md", "componentType": "page", "source": "generated" },
+    { "name": "component", "kind": "creation", "path": ".claude/skills/component/SKILL.md", "componentType": "component", "source": "generated" },
+    { "name": "entity-list", "kind": "creation", "path": ".claude/skills/entity-list/SKILL.md", "componentType": "entity-list", "source": "generated" },
+    { "name": "entity-form", "kind": "creation", "path": ".claude/skills/entity-form/SKILL.md", "componentType": "entity-form", "source": "generated" },
+    { "name": "store", "kind": "creation", "path": ".claude/skills/store/SKILL.md", "componentType": "store", "source": "generated" },
+    { "name": "event-subscriber", "kind": "creation", "path": ".claude/skills/event-subscriber/SKILL.md", "componentType": "event-subscriber", "source": "generated" },
+    { "name": "rust-db-module", "kind": "creation", "path": ".claude/skills/rust-db-module/SKILL.md", "componentType": "rust-db-module", "source": "generated" }
+  ],
+  "conventions": {
+    "immutabilityKeyword": "const",
+    "naming": "PascalCase components, camelCase functions/variables, snake_case Rust fields",
+    "notes": [
+      "Tailwind utility styling with hardcoded design-token hex colors",
+      "Named exports only (no default exports)",
+      "String(err) error coercion pattern",
+      "Zustand for state management (no middleware)",
+      "serde Serialize/Deserialize derives on all Rust DTOs"
+    ]
+  },
+  "reviewRules": [
+    { "id": "C1", "rule": "`any` used where a concrete type is known", "severity": "M", "autoFixable": false },
+    { "id": "C2", "rule": "`as` cast without an inline `// reason:` justification", "severity": "M", "autoFixable": false },
+    { "id": "C3", "rule": "Non-null assertion `!` on an unchecked value", "severity": "M", "autoFixable": false },
+    { "id": "C4", "rule": "Missing `await`/`void` on a floating Promise", "severity": "H", "autoFixable": false },
+    { "id": "C5", "rule": "Missing explicit return type on an exported/`async` function", "severity": "L", "autoFixable": true },
+    { "id": "C6", "rule": "`console.log` in committed code instead of a `Logger`", "severity": "L", "autoFixable": true },
+    { "id": "D1", "rule": "Service issues DB queries directly instead of via a repository", "severity": "H", "autoFixable": false },
+    { "id": "D2", "rule": "New entity/model without a matching migration", "severity": "H", "autoFixable": false },
+    { "id": "E1", "rule": "`throw` of a non-Error (string/object) instead of a typed error class", "severity": "M", "autoFixable": true },
+    { "id": "E2", "rule": "New domain error class not mapped in the global exception filter", "severity": "M", "autoFixable": false },
+    { "id": "S1", "rule": "Missing guard/auth on a state-changing route", "severity": "H", "autoFixable": false },
+    { "id": "S2", "rule": "Raw `process.env` read in feature code instead of the typed config accessor", "severity": "M", "autoFixable": false },
+    { "id": "T1", "rule": "New exported function/provider without a test", "severity": "H", "autoFixable": false }
+  ],
+  "models": {
+    "byAgent": {
+      "explore": "opus",
+      "plan": "opus",
+      "code-reviewer": "sonnet",
+      "execution-path-analyzer": "sonnet",
+      "module-documentation": "opus",
+      "prompt-generation": "opus"
+    },
+    "byPhaseComplexity": {
+      "implement": { "low": "haiku", "medium": "haiku", "high": "sonnet" },
+      "write-test": { "low": "haiku", "medium": "haiku", "high": "sonnet" }
+    }
+  }
+}
