@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { api } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useToast } from "../stores/toastStore";
+import { useToast } from "@/hooks/use-toast";
 
 interface DiscoveredDevice {
   hostname: string;

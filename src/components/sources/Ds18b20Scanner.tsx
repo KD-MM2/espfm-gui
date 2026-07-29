@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { api, type Ds18b20Device } from "../../lib/api";
-import { useToast } from "../../stores/toastStore";
+import { useToast } from "@/hooks/use-toast";
 
 interface Ds18b20ScannerProps {
   deviceId: number;

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Wifi, WifiOff, RefreshCw, Loader2 } from "lucide-react";
 import { api, type WifiAp, type WifiStatus } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useToast } from "../stores/toastStore";
+import { useToast } from "@/hooks/use-toast";
 
 export function WifiPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);

@@ -8,7 +8,7 @@ import {
 } from "lucide-react";
 import { api, type SystemInfo } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useToast } from "../stores/toastStore";
+import { useToast } from "@/hooks/use-toast";
 
 function formatUptime(secs: number): string {
   const d = Math.floor(secs / 86400);

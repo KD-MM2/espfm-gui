@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { api, type ScheduleState, type FanState } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useToast } from "../stores/toastStore";
+import { useToast } from "@/hooks/use-toast";
 import { ScheduleList } from "../components/schedules/ScheduleList";
 import { ScheduleForm } from "../components/schedules/ScheduleForm";
 

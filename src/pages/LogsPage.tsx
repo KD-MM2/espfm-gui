@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Loader2, Trash2, ChevronLeft, ChevronRight, Server } from "lucide-react";
 import { api, type ActivityLogEntry } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useToast } from "../stores/toastStore";
+import { useToast } from "@/hooks/use-toast";
 import { LogDetailDialog } from "../components/logs/LogDetailDialog";
 
 const PAGE_SIZE = 50;

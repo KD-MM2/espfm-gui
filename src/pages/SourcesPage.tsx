@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Plus, ScanLine } from "lucide-react";
 import { api, type SourceState, type Ds18b20Device } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useToast } from "../stores/toastStore";
+import { useToast } from "@/hooks/use-toast";
 import { SourceList } from "../components/sources/SourceList";
 import { SourceForm } from "../components/sources/SourceForm";
 import { Ds18b20Scanner } from "../components/sources/Ds18b20Scanner";

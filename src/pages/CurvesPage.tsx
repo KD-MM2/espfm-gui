@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { api, type CurveState } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useToast } from "../stores/toastStore";
+import { useToast } from "@/hooks/use-toast";
 import { CurveList } from "../components/curves/CurveList";
 import { CurveEditor } from "../components/curves/CurveEditor";
 

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { api, type FanState, type SourceState, type CurveState, type ScheduleState } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
-import { useToast } from "../stores/toastStore";
+import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { FanList } from "../components/fans/FanList";
 import { FanForm, type FanFormData } from "../components/fans/FanForm";
