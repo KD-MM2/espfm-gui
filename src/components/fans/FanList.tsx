@@ -64,6 +64,20 @@ function FanCard({
                 </span>
                 % duty
               </span>
+              <span className="text-xs">
+                <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                  fan.mode === "auto"
+                    ? "bg-blue-50 text-blue-700"
+                    : "bg-[#f0f0f3] text-[#60646c]"
+                }`}>
+                  {fan.mode}
+                </span>
+              </span>
+              {fan.inverted && (
+                <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+                  inv
+                </span>
+              )}
             </div>
           </div>
         </div>

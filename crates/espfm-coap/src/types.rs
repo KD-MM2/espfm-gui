@@ -13,6 +13,7 @@ pub struct DeviceInfo {
 pub struct FanState {
     pub slot: u32,
     pub name: String,
+    pub mode: String,
     pub rpm: u32,
     pub duty_pct: u32,
     pub enabled: bool,
@@ -21,13 +22,21 @@ pub struct FanState {
     pub tach_gpio: u32,
     pub source_id: u32,
     pub curve_id: u32,
+    pub schedule_id: u32,
+    pub group_id: u32,
 }
 
 impl From<proto::FanInfo> for FanState {
     fn from(f: proto::FanInfo) -> Self {
+        let mode = match proto::FanMode::try_from(f.mode) {
+            Ok(proto::FanMode::Auto) => "auto",
+            _ => "manual",
+        }
+        .to_string();
         Self {
             slot: f.id,
             name: f.name,
+            mode,
             rpm: f.rpm,
             duty_pct: f.duty,
             enabled: f.enabled,
@@ -36,6 +45,8 @@ impl From<proto::FanInfo> for FanState {
             tach_gpio: f.tach_gpio,
             source_id: f.source_id,
             curve_id: f.curve_id,
+            schedule_id: f.schedule_id,
+            group_id: f.group_id,
         }
     }
 }

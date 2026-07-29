@@ -4,7 +4,7 @@ import { api, type FanState } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "../stores/toastStore";
 import { FanList } from "../components/fans/FanList";
-import { FanForm } from "../components/fans/FanForm";
+import { FanForm, type FanFormData } from "../components/fans/FanForm";
 
 const MAX_FAN_SLOTS = 8;
 
@@ -29,18 +29,65 @@ export function FansPage() {
     fetchFans();
   }, [fetchFans]);
 
-  async function handleCreate(data: {
-    name: string;
-    pwm_gpio: number;
-    tach_gpio: number;
-  }) {
+  async function handleCreate(data: FanFormData) {
     if (activeDeviceId == null) return;
     try {
-      const created = await api.createFan(activeDeviceId, data);
-      setFans((prev) => [...prev, created]);
-      setShowForm(false);
+      const created = await api.createFan(activeDeviceId, {
+        name: data.name,
+        pwm_gpio: data.pwm_gpio,
+        tach_gpio: data.tach_gpio,
+      });
+      // Apply additional settings via update if needed
+      const needsUpdate =
+        data.mode !== "manual" ||
+        data.duty !== 50 ||
+        data.inverted ||
+        !data.enabled ||
+        data.source_id !== 255 ||
+        data.curve_id !== 255 ||
+        data.schedule_id !== 255 ||
+        data.group_id !== 0;
+
+      let final = created;
+      if (needsUpdate) {
+        final = await api.updateFan(activeDeviceId, created.slot, {
+          mode: data.mode,
+          duty: data.duty,
+          inverted: data.inverted,
+          enabled: data.enabled,
+          source_id: data.source_id !== 255 ? data.source_id : undefined,
+          curve_id: data.curve_id !== 255 ? data.curve_id : undefined,
+          schedule_id: data.schedule_id !== 255 ? data.schedule_id : undefined,
+          group_id: data.group_id !== 0 ? data.group_id : undefined,
+        });
+      }
+      setFans((prev) => [...prev, final]);
+      closeForm();
     } catch (err) {
       showToast(`Failed to create fan: ${String(err)}`, "error");
+    }
+  }
+
+  async function handleUpdate(fan: FanState, data: FanFormData) {
+    if (activeDeviceId == null) return;
+    try {
+      const updated = await api.updateFan(activeDeviceId, fan.slot, {
+        name: data.name,
+        mode: data.mode,
+        duty: data.duty,
+        inverted: data.inverted,
+        enabled: data.enabled,
+        source_id: data.source_id !== 255 ? data.source_id : undefined,
+        curve_id: data.curve_id !== 255 ? data.curve_id : undefined,
+        schedule_id: data.schedule_id !== 255 ? data.schedule_id : undefined,
+        group_id: data.group_id !== 0 ? data.group_id : undefined,
+      });
+      setFans((prev) =>
+        prev.map((f) => (f.slot === updated.slot ? updated : f))
+      );
+      closeForm();
+    } catch (err) {
+      showToast(`Failed to update fan: ${String(err)}`, "error");
     }
   }
 
@@ -73,29 +120,11 @@ export function FansPage() {
     setShowForm(true);
   }
 
-  function handleFormSubmit(data: {
-    name: string;
-    pwm_gpio: number;
-    tach_gpio: number;
-  }) {
+  function handleFormSubmit(data: FanFormData) {
     if (editingFan) {
-      // Edit mode — only name can be updated via updateFan API
-      handleUpdateName(editingFan, data.name);
+      handleUpdate(editingFan, data);
     } else {
       handleCreate(data);
-    }
-  }
-
-  async function handleUpdateName(fan: FanState, name: string) {
-    if (activeDeviceId == null) return;
-    try {
-      const updated = await api.updateFan(activeDeviceId, fan.slot, { name });
-      setFans((prev) =>
-        prev.map((f) => (f.slot === updated.slot ? updated : f))
-      );
-      closeForm();
-    } catch (err) {
-      showToast(`Failed to update fan: ${String(err)}`, "error");
     }
   }
 

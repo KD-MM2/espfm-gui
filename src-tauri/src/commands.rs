@@ -23,11 +23,17 @@ pub struct DeviceInfo {
 pub struct FanState {
     pub slot: u8,
     pub name: String,
+    pub mode: String,
     pub rpm: u32,
     pub duty_pct: f32,
     pub enabled: bool,
+    pub inverted: bool,
     pub pwm_gpio: u8,
     pub tach_gpio: u8,
+    pub source_id: u8,
+    pub curve_id: u8,
+    pub schedule_id: u8,
+    pub group_id: u8,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -40,8 +46,14 @@ pub struct CreateFanRequest {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateFanRequest {
     pub name: Option<String>,
+    pub mode: Option<String>,
+    pub duty: Option<u32>,
     pub enabled: Option<bool>,
     pub inverted: Option<bool>,
+    pub source_id: Option<u32>,
+    pub curve_id: Option<u32>,
+    pub schedule_id: Option<u32>,
+    pub group_id: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -226,11 +238,17 @@ pub async fn get_fans(
         .map(|f| FanState {
             slot: f.slot as u8,
             name: f.name,
+            mode: f.mode,
             rpm: f.rpm,
             duty_pct: f.duty_pct as f32,
             enabled: f.enabled,
+            inverted: f.inverted,
             pwm_gpio: f.pwm_gpio as u8,
             tach_gpio: f.tach_gpio as u8,
+            source_id: f.source_id as u8,
+            curve_id: f.curve_id as u8,
+            schedule_id: f.schedule_id as u8,
+            group_id: f.group_id as u8,
         })
         .collect())
 }
@@ -253,11 +271,17 @@ pub async fn create_fan(
     Ok(FanState {
         slot: f.slot as u8,
         name: f.name,
+        mode: f.mode,
         rpm: f.rpm,
         duty_pct: f.duty_pct as f32,
         enabled: f.enabled,
+        inverted: f.inverted,
         pwm_gpio: f.pwm_gpio as u8,
         tach_gpio: f.tach_gpio as u8,
+        source_id: f.source_id as u8,
+        curve_id: f.curve_id as u8,
+        schedule_id: f.schedule_id as u8,
+        group_id: f.group_id as u8,
     })
 }
 
@@ -272,14 +296,18 @@ pub async fn update_fan(
     let conn = connections
         .get(&device_id)
         .ok_or_else(|| format!("Device {device_id} not connected"))?;
+    let mode_val = req.mode.as_deref().map(|m| match m {
+        "auto" => 1,
+        _ => 0,
+    });
     let proto_req = proto::FanUpdateRequest {
         id: slot as u32,
-        mode: None,
-        duty: None,
-        source_id: None,
-        curve_id: None,
-        schedule_id: None,
-        group_id: None,
+        mode: mode_val,
+        duty: req.duty,
+        source_id: req.source_id,
+        curve_id: req.curve_id,
+        schedule_id: req.schedule_id,
+        group_id: req.group_id,
         inverted: req.inverted,
         enabled: req.enabled,
     };
@@ -291,11 +319,17 @@ pub async fn update_fan(
     Ok(FanState {
         slot: f.slot as u8,
         name: f.name,
+        mode: f.mode,
         rpm: f.rpm,
         duty_pct: f.duty_pct as f32,
         enabled: f.enabled,
+        inverted: f.inverted,
         pwm_gpio: f.pwm_gpio as u8,
         tach_gpio: f.tach_gpio as u8,
+        source_id: f.source_id as u8,
+        curve_id: f.curve_id as u8,
+        schedule_id: f.schedule_id as u8,
+        group_id: f.group_id as u8,
     })
 }
 

@@ -3,11 +3,17 @@ import { invoke } from "@tauri-apps/api/core";
 export interface FanState {
   slot: number;
   name: string;
+  mode: string;
   rpm: number;
   duty_pct: number;
   enabled: boolean;
+  inverted: boolean;
   pwm_gpio: number;
   tach_gpio: number;
+  source_id: number;
+  curve_id: number;
+  schedule_id: number;
+  group_id: number;
 }
 export interface SourceState {
   slot: number;
@@ -68,7 +74,17 @@ export const api = {
   updateFan: (
     deviceId: number,
     slot: number,
-    req: { name?: string; enabled?: boolean; inverted?: boolean }
+    req: {
+      name?: string;
+      mode?: string;
+      duty?: number;
+      enabled?: boolean;
+      inverted?: boolean;
+      source_id?: number;
+      curve_id?: number;
+      schedule_id?: number;
+      group_id?: number;
+    }
   ) => invoke<FanState>("update_fan", { deviceId, slot, req }),
   deleteFan: (deviceId: number, slot: number) =>
     invoke("delete_fan", { deviceId, slot }),
