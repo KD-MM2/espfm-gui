@@ -9,14 +9,17 @@ import {
   Legend,
 } from "recharts";
 import type { ChartDataPoint } from "../../lib/fanSample";
-import type { TimeRange } from "../../lib/timeSeriesBuffer";
+import type { TimeRange, BucketSize } from "../../lib/timeSeriesBuffer";
+import { BUCKET_OPTIONS } from "../../lib/timeSeriesBuffer";
 
 interface FanTempChartProps {
   data: ChartDataPoint[];
   fanNames: string[];
   tempNames: string[];
   timeRange: TimeRange;
+  bucketSize: BucketSize;
   onTimeRangeChange: (range: TimeRange) => void;
+  onBucketSizeChange: (size: BucketSize) => void;
 }
 
 const FAN_COLORS = ["#171717", "#0d74ce", "#60646c", "#476cff"];
@@ -34,7 +37,9 @@ export function FanTempChart({
   fanNames,
   tempNames,
   timeRange,
+  bucketSize,
   onTimeRangeChange,
+  onBucketSizeChange,
 }: FanTempChartProps) {
   const hasTemp = tempNames.length > 0;
 
@@ -44,21 +49,39 @@ export function FanTempChart({
         <h2 className="text-sm font-semibold text-[#171717]">
           Fan RPM & Temperature
         </h2>
-        <div className="flex gap-1">
-          {TIME_RANGES.map((range) => (
-            <button
-              key={range.value}
-              type="button"
-              onClick={() => onTimeRangeChange(range.value)}
-              className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-                timeRange === range.value
-                  ? "bg-[#171717] text-white"
-                  : "bg-[#f0f0f3] text-[#60646c] hover:bg-[#dcdee0]"
-              }`}
+        <div className="flex items-center gap-3">
+          {/* Bucket size selector */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] text-[#999]">Group by:</span>
+            <select
+              value={bucketSize}
+              onChange={(e) => onBucketSizeChange(Number(e.target.value) as BucketSize)}
+              className="rounded-md border border-[#dcdee0] bg-white px-2 py-1 text-xs text-[#171717] outline-none"
             >
-              {range.label}
-            </button>
-          ))}
+              {BUCKET_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* Time range selector */}
+          <div className="flex gap-1">
+            {TIME_RANGES.map((range) => (
+              <button
+                key={range.value}
+                type="button"
+                onClick={() => onTimeRangeChange(range.value)}
+                className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  timeRange === range.value
+                    ? "bg-[#171717] text-white"
+                    : "bg-[#f0f0f3] text-[#60646c] hover:bg-[#dcdee0]"
+                }`}
+              >
+                {range.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

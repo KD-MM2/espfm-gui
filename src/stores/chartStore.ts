@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { TimeSeriesBuffer, type TimeRange } from "../lib/timeSeriesBuffer";
+import { TimeSeriesBuffer, type TimeRange, type BucketSize } from "../lib/timeSeriesBuffer";
 import type { ChartDataPoint } from "../lib/fanSample";
 import { eventBus } from "../lib/events";
 
@@ -9,7 +9,9 @@ interface ChartStore {
   fanNames: string[];
   tempNames: string[];
   timeRange: TimeRange;
+  bucketSize: BucketSize;
   setTimeRange: (range: TimeRange) => void;
+  setBucketSize: (size: BucketSize) => void;
   updateChart: () => void;
 }
 
@@ -21,15 +23,21 @@ export const useChartStore = create<ChartStore>((set, get) => ({
   fanNames: [],
   tempNames: [],
   timeRange: "1h",
+  bucketSize: 60,
 
   setTimeRange: (range) => {
     set({ timeRange: range });
     get().updateChart();
   },
 
+  setBucketSize: (size) => {
+    set({ bucketSize: size });
+    get().updateChart();
+  },
+
   updateChart: () => {
-    const { buffer, timeRange } = get();
-    const chartData = buffer.toChartData(timeRange);
+    const { buffer, timeRange, bucketSize } = get();
+    const chartData = buffer.toChartData(timeRange, bucketSize);
     const fanNames = buffer.getFanNames();
     const tempNames = buffer.getTempNames();
     set({ chartData, fanNames, tempNames });

@@ -1,6 +1,7 @@
 import type { FanSample, ChartDataPoint } from "./fanSample";
 
 export type TimeRange = "30m" | "1h" | "6h" | "24h";
+export type BucketSize = 10 | 30 | 60 | 300 | 600 | 900;
 
 const RANGE_MINUTES: Record<TimeRange, number> = {
   "30m": 30,
@@ -8,6 +9,15 @@ const RANGE_MINUTES: Record<TimeRange, number> = {
   "6h": 360,
   "24h": 1440,
 };
+
+export const BUCKET_OPTIONS: { value: BucketSize; label: string }[] = [
+  { value: 10, label: "10s" },
+  { value: 30, label: "30s" },
+  { value: 60, label: "1min" },
+  { value: 300, label: "5min" },
+  { value: 600, label: "10min" },
+  { value: 900, label: "15min" },
+];
 
 export class TimeSeriesBuffer {
   private samples: FanSample[] = [];
@@ -37,19 +47,12 @@ export class TimeSeriesBuffer {
     return this.samples.filter((s) => s.timestamp >= cutoff);
   }
 
-  toChartData(range: TimeRange): ChartDataPoint[] {
+  toChartData(range: TimeRange, bucketSeconds: BucketSize = 60): ChartDataPoint[] {
     const minutes = RANGE_MINUTES[range];
     const samples = this.getRange(minutes);
     if (samples.length === 0) return [];
 
-    let bucketMs: number;
-    if (minutes <= 60) {
-      bucketMs = 2000;
-    } else if (minutes <= 360) {
-      bucketMs = 60000;
-    } else {
-      bucketMs = 300000;
-    }
+    const bucketMs = bucketSeconds * 1000;
 
     const buckets = new Map<number, FanSample[]>();
     for (const s of samples) {

@@ -43,6 +43,8 @@ export function DashboardPage() {
   const tempNames = useChartStore((s) => s.tempNames);
   const timeRange = useChartStore((s) => s.timeRange);
   const setTimeRange = useChartStore((s) => s.setTimeRange);
+  const bucketSize = useChartStore((s) => s.bucketSize);
+  const setBucketSize = useChartStore((s) => s.setBucketSize);
 
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
@@ -221,7 +223,9 @@ export function DashboardPage() {
               fanNames={fanNames}
               tempNames={tempNames}
               timeRange={timeRange}
+              bucketSize={bucketSize}
               onTimeRangeChange={handleTimeRangeChange}
+              onBucketSizeChange={setBucketSize}
             />
           ) : (
             <div className="flex h-[324px] items-center justify-center rounded-lg border border-[#dcdee0] bg-white">
