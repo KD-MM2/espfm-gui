@@ -58,10 +58,10 @@ export function Ds18b20Scanner({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-lg border border-[#dcdee0] bg-white p-5 shadow-lg"
+        className="w-full max-w-lg rounded-lg border border-border bg-card p-5 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-base font-semibold text-[#171717]">
+        <h2 className="text-base font-semibold text-foreground">
           DS18B20 Scanner
         </h2>
 
@@ -71,7 +71,7 @@ export function Ds18b20Scanner({
             <div className="flex-1">
               <label
                 htmlFor="ds18b20-bus-gpio"
-                className="mb-1 block text-xs font-medium text-[#60646c]"
+                className="mb-1 block text-xs font-medium text-muted-foreground"
               >
                 Bus GPIO
               </label>
@@ -83,14 +83,14 @@ export function Ds18b20Scanner({
                 value={busGpio}
                 onChange={(e) => setBusGpio(e.target.value)}
                 placeholder="e.g. 4"
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
               />
             </div>
             <button
               type="button"
               onClick={handleConfigureGpio}
               disabled={configuring || !busGpio.trim()}
-              className="flex items-center gap-1.5 rounded-md border border-[#dcdee0] bg-white px-3.5 py-2 text-sm font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
             >
               {configuring ? "Setting..." : "Configure"}
             </button>
@@ -101,7 +101,7 @@ export function Ds18b20Scanner({
             type="button"
             onClick={handleScan}
             disabled={scanning}
-            className="flex items-center gap-1.5 rounded-md bg-[#171717] px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {scanning && <Loader2 size={16} className="animate-spin" />}
             {scanning ? "Scanning..." : "Scan Bus"}
@@ -110,7 +110,7 @@ export function Ds18b20Scanner({
 
         {/* Results */}
         {scanned && !scanning && devices.length === 0 && (
-          <p className="mt-4 text-sm text-[#60646c]">No devices found.</p>
+          <p className="mt-4 text-sm text-muted-foreground">No devices found.</p>
         )}
 
         {devices.length > 0 && (
@@ -118,23 +118,23 @@ export function Ds18b20Scanner({
             {devices.map((device) => (
               <div
                 key={device.rom_code}
-                className="flex items-center justify-between rounded-lg border border-[#dcdee0] bg-white p-3"
+                className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
               >
                 <div>
-                  <div className="text-xs text-[#60646c]">
+                  <div className="text-xs text-muted-foreground">
                     Device {device.index}
                   </div>
-                  <div className="mt-0.5 font-mono text-sm text-[#171717]">
+                  <div className="mt-0.5 font-mono text-sm text-foreground">
                     {device.rom_code}
                   </div>
-                  <div className="mt-0.5 text-xs text-[#60646c]">
+                  <div className="mt-0.5 text-xs text-muted-foreground">
                     {device.temp_c.toFixed(1)} °C
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => onAssign(device)}
-                  className="rounded-md bg-[#171717] px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#2a2a2a]"
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   Assign
                 </button>
@@ -148,7 +148,7 @@ export function Ds18b20Scanner({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-md border border-[#dcdee0] bg-white px-4 py-2 text-sm font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3]"
+            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
             Close
           </button>

@@ -154,8 +154,8 @@ export function SchedulesPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#171717]">Schedules</h1>
-          <p className="mt-1 text-xs text-[#60646c]">
+          <h1 className="text-xl font-semibold text-foreground">Schedules</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
             {schedules.length} of {MAX_SCHEDULE_SLOTS} slots used
           </p>
         </div>
@@ -163,7 +163,7 @@ export function SchedulesPage() {
           type="button"
           onClick={openCreate}
           disabled={schedules.length >= MAX_SCHEDULE_SLOTS}
-          className="flex items-center gap-1.5 rounded-md bg-[#171717] px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={16} />
           Create Schedule

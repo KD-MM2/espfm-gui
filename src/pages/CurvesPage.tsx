@@ -107,8 +107,8 @@ export function CurvesPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#171717]">Curves</h1>
-          <p className="mt-1 text-xs text-[#60646c]">
+          <h1 className="text-xl font-semibold text-foreground">Curves</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
             {curves.length} of {MAX_CURVE_SLOTS} slots used
           </p>
         </div>
@@ -116,7 +116,7 @@ export function CurvesPage() {
           type="button"
           onClick={openCreate}
           disabled={curves.length >= MAX_CURVE_SLOTS}
-          className="flex items-center gap-1.5 rounded-md bg-[#171717] px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={16} />
           Create Curve
@@ -127,14 +127,14 @@ export function CurvesPage() {
       {showEditor ? (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-semibold text-[#171717]">
+            <h2 className="text-base font-semibold text-foreground">
               {editingCurve ? "Edit Curve" : "Create Curve"}
             </h2>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={closeEditor}
-                className="rounded-md border border-[#dcdee0] bg-white px-4 py-2 text-sm font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3]"
+                className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
               >
                 Cancel
               </button>
@@ -142,7 +142,7 @@ export function CurvesPage() {
                 type="button"
                 onClick={handleSave}
                 disabled={!curveName.trim() || editorPoints.length < 2}
-                className="rounded-md bg-[#171717] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {editingCurve ? "Update" : "Create"}
               </button>
@@ -152,7 +152,7 @@ export function CurvesPage() {
           <div>
             <label
               htmlFor="curve-name"
-              className="mb-1 block text-xs font-medium text-[#60646c]"
+              className="mb-1 block text-xs font-medium text-muted-foreground"
             >
               Name
             </label>
@@ -162,7 +162,7 @@ export function CurvesPage() {
               value={curveName}
               onChange={(e) => setCurveName(e.target.value)}
               placeholder="e.g. CPU Fan Curve"
-              className="w-full max-w-sm rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+              className="w-full max-w-sm rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
               autoFocus
             />
           </div>

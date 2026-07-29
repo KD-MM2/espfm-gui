@@ -69,8 +69,8 @@ export function LogsPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#171717]">Logs</h1>
-          <p className="mt-1 text-xs text-[#60646c]">
+          <h1 className="text-xl font-semibold text-foreground">Logs</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
             Activity log for the connected device
           </p>
         </div>
@@ -78,7 +78,7 @@ export function LogsPage() {
           <select
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
-            className="rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+            className="rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
           >
             {LOG_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -90,7 +90,7 @@ export function LogsPage() {
             type="button"
             onClick={handleClear}
             disabled={clearing || activeDeviceId == null || logs.length === 0}
-            className="flex items-center gap-1.5 rounded-md border border-[#dcdee0] bg-white px-3.5 py-2 text-sm font-medium text-[#dc2626] transition-colors hover:bg-[#fee2e2] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {clearing ? (
               <Loader2 size={16} className="animate-spin" />
@@ -103,37 +103,37 @@ export function LogsPage() {
       </div>
 
       {activeDeviceId == null ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[#dcdee0] bg-white py-12">
-          <Server size={24} className="mb-2 text-[#dcdee0]" />
-          <p className="text-sm text-[#60646c]">
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card py-12">
+          <Server size={24} className="mb-2 text-border" />
+          <p className="text-sm text-muted-foreground">
             No device selected. Connect to a device first.
           </p>
         </div>
       ) : loading ? (
-        <div className="flex items-center justify-center rounded-lg border border-[#dcdee0] bg-white py-12">
-          <Loader2 size={20} className="animate-spin text-[#60646c]" />
+        <div className="flex items-center justify-center rounded-lg border border-border bg-card py-12">
+          <Loader2 size={20} className="animate-spin text-muted-foreground" />
         </div>
       ) : logs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[#dcdee0] bg-white py-12">
-          <Server size={24} className="mb-2 text-[#dcdee0]" />
-          <p className="text-sm text-[#60646c]">No logs found.</p>
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card py-12">
+          <Server size={24} className="mb-2 text-border" />
+          <p className="text-sm text-muted-foreground">No logs found.</p>
         </div>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-lg border border-[#dcdee0] bg-white">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-[#dcdee0] bg-[#f8f8fa]">
-                  <th className="px-4 py-3 text-xs font-medium text-[#60646c]">
+                <tr className="border-b border-border bg-muted">
+                  <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
                     Time
                   </th>
-                  <th className="px-4 py-3 text-xs font-medium text-[#60646c]">
+                  <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
                     Type
                   </th>
-                  <th className="px-4 py-3 text-xs font-medium text-[#60646c]">
+                  <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
                     Message
                   </th>
-                  <th className="px-4 py-3 text-xs font-medium text-[#60646c]">
+                  <th className="px-4 py-3 text-xs font-medium text-muted-foreground">
                     Details
                   </th>
                 </tr>
@@ -144,10 +144,10 @@ export function LogsPage() {
                   return (
                     <tr
                       key={entry.id}
-                      className="cursor-pointer border-b border-[#f0f0f3] transition-colors hover:bg-[#f8f8fa]"
+                      className="cursor-pointer border-b border-muted transition-colors hover:bg-muted"
                       onClick={() => setSelectedEntry(entry)}
                     >
-                      <td className="whitespace-nowrap px-4 py-2.5 font-mono text-xs text-[#60646c]">
+                      <td className="whitespace-nowrap px-4 py-2.5 font-mono text-xs text-muted-foreground">
                         {entry.ts}
                       </td>
                       <td className="px-4 py-2.5">
@@ -158,10 +158,10 @@ export function LogsPage() {
                           {entry.event_type.toUpperCase()}
                         </span>
                       </td>
-                      <td className="max-w-[300px] truncate px-4 py-2.5 text-xs text-[#171717]">
+                      <td className="max-w-[300px] truncate px-4 py-2.5 text-xs text-foreground">
                         {entry.message}
                       </td>
-                      <td className="max-w-[200px] truncate px-4 py-2.5 font-mono text-xs text-[#60646c]">
+                      <td className="max-w-[200px] truncate px-4 py-2.5 font-mono text-xs text-muted-foreground">
                         {entry.details || "—"}
                       </td>
                     </tr>
@@ -173,7 +173,7 @@ export function LogsPage() {
 
           {/* Pagination */}
           <div className="mt-4 flex items-center justify-between">
-            <span className="text-xs text-[#60646c]">
+            <span className="text-xs text-muted-foreground">
               Page {page + 1} ({logs.length} entries)
             </span>
             <div className="flex items-center gap-2">
@@ -181,7 +181,7 @@ export function LogsPage() {
                 type="button"
                 onClick={() => setPage((p) => Math.max(0, p - 1))}
                 disabled={page === 0}
-                className="flex items-center gap-1 rounded-md border border-[#dcdee0] bg-white px-3 py-1.5 text-xs font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronLeft size={14} />
                 Previous
@@ -190,7 +190,7 @@ export function LogsPage() {
                 type="button"
                 onClick={() => setPage((p) => p + 1)}
                 disabled={logs.length < PAGE_SIZE}
-                className="flex items-center gap-1 rounded-md border border-[#dcdee0] bg-white px-3 py-1.5 text-xs font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3] disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next
                 <ChevronRight size={14} />

@@ -35,30 +35,30 @@ function ScheduleCard({
 }) {
   return (
     <div
-      className={`rounded-lg border border-[#dcdee0] bg-white p-4 ${
+      className={`rounded-lg border border-border bg-card p-4 ${
         !schedule.enabled ? "opacity-60" : ""
       }`}
     >
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate text-sm font-semibold text-[#171717]">
+            <h3 className="truncate text-sm font-semibold text-foreground">
               Fan {schedule.fan_id}
             </h3>
             {!schedule.enabled && (
-              <span className="shrink-0 rounded-full bg-[#f0f0f3] px-2 py-0.5 text-[10px] font-medium text-[#60646c]">
+              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                 Disabled
               </span>
             )}
           </div>
 
           <div className="mt-2 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-[#60646c]">
-              <span className="font-medium text-[#171717]">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">
                 {schedule.duty}%
               </span>
               <span>duty</span>
-              <span className="text-[#dcdee0]">|</span>
+              <span className="text-border">|</span>
               <span>
                 {minutesToHHMM(schedule.start_min)} &ndash;{" "}
                 {minutesToHHMM(schedule.end_min)}
@@ -71,11 +71,11 @@ function ScheduleCard({
           <button
             type="button"
             onClick={() => onToggle(schedule)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#f0f0f3]"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted"
             title={schedule.enabled ? "Disable schedule" : "Enable schedule"}
           >
             {schedule.enabled ? (
-              <CheckCircle2 size={16} className="text-[#16a34a]" />
+              <CheckCircle2 size={16} className="text-success" />
             ) : (
               <Circle size={16} />
             )}
@@ -83,7 +83,7 @@ function ScheduleCard({
           <button
             type="button"
             onClick={() => onEdit(schedule)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#f0f0f3]"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted"
             title="Edit schedule"
           >
             <Pencil size={16} />
@@ -91,7 +91,7 @@ function ScheduleCard({
           <button
             type="button"
             onClick={() => onDelete(schedule)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#fee2e2] hover:text-[#dc2626]"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             title="Delete schedule"
           >
             <Trash2 size={16} />

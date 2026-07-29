@@ -168,8 +168,8 @@ export function SourcesPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#171717]">Sources</h1>
-          <p className="mt-1 text-xs text-[#60646c]">
+          <h1 className="text-xl font-semibold text-foreground">Sources</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
             {sources.length} of {MAX_SOURCE_SLOTS} slots used
           </p>
         </div>
@@ -177,7 +177,7 @@ export function SourcesPage() {
           <button
             type="button"
             onClick={() => setShowScanner(true)}
-            className="flex items-center gap-1.5 rounded-md border border-[#dcdee0] bg-white px-3.5 py-2 text-sm font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3]"
+            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
           >
             <ScanLine size={16} />
             Scan DS18B20
@@ -186,7 +186,7 @@ export function SourcesPage() {
             type="button"
             onClick={() => setShowForm(true)}
             disabled={sources.length >= MAX_SOURCE_SLOTS}
-            className="flex items-center gap-1.5 rounded-md bg-[#171717] px-3.5 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus size={16} />
             Create Source

@@ -7,9 +7,9 @@ interface ConnectionBadgeProps {
 }
 
 const dotColors: Record<ConnectionStatus, string> = {
-  connected: "text-[#16a34a]",
-  reconnecting: "text-[#ab6400]",
-  disconnected: "text-[#dc2626]",
+  connected: "text-success",
+  reconnecting: "text-warning",
+  disconnected: "text-destructive",
 };
 
 const labels: Record<ConnectionStatus, string> = {
@@ -22,7 +22,7 @@ export function ConnectionBadge({ status }: ConnectionBadgeProps) {
   return (
     <div className="flex items-center gap-1.5">
       <Circle size={8} className={`shrink-0 ${dotColors[status]}`} />
-      <span className="text-xs text-[#60646c]">{labels[status]}</span>
+      <span className="text-xs text-muted-foreground">{labels[status]}</span>
     </div>
   );
 }

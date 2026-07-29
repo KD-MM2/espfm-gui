@@ -2,9 +2,9 @@ import { X } from "lucide-react";
 import { useToastStore, type ToastType } from "../../stores/toastStore";
 
 const bgColors: Record<ToastType, string> = {
-  success: "bg-[#16a34a]",
-  warning: "bg-[#ab6400]",
-  error: "bg-[#dc2626]",
+  success: "bg-success",
+  warning: "bg-warning",
+  error: "bg-destructive",
 };
 
 export function ToastContainer() {

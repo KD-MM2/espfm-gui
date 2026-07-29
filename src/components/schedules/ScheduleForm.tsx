@@ -66,10 +66,10 @@ export function ScheduleForm({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-md rounded-lg border border-[#dcdee0] bg-white p-5 shadow-lg"
+        className="w-full max-w-md rounded-lg border border-border bg-card p-5 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-base font-semibold text-[#171717]">
+        <h2 className="text-base font-semibold text-foreground">
           {isEdit ? "Edit Schedule" : "Create Schedule"}
         </h2>
 
@@ -78,7 +78,7 @@ export function ScheduleForm({
           <div>
             <label
               htmlFor="schedule-fan-id"
-              className="mb-1 block text-xs font-medium text-[#60646c]"
+              className="mb-1 block text-xs font-medium text-muted-foreground"
             >
               Fan
             </label>
@@ -86,7 +86,7 @@ export function ScheduleForm({
               id="schedule-fan-id"
               value={fanId}
               onChange={(e) => setFanId(Number(e.target.value))}
-              className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
               autoFocus
             >
               {fans.length > 0 ? (
@@ -109,7 +109,7 @@ export function ScheduleForm({
           <div>
             <label
               htmlFor="schedule-duty"
-              className="mb-1 block text-xs font-medium text-[#60646c]"
+              className="mb-1 block text-xs font-medium text-muted-foreground"
             >
               Duty ({duty}%)
             </label>
@@ -120,9 +120,9 @@ export function ScheduleForm({
               max={100}
               value={duty}
               onChange={(e) => setDuty(Number(e.target.value))}
-              className="w-full accent-[#171717]"
+              className="w-full accent-primary"
             />
-            <div className="flex justify-between text-[10px] text-[#60646c]">
+            <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>0%</span>
               <span>100%</span>
             </div>
@@ -132,7 +132,7 @@ export function ScheduleForm({
           <div>
             <label
               htmlFor="schedule-start"
-              className="mb-1 block text-xs font-medium text-[#60646c]"
+              className="mb-1 block text-xs font-medium text-muted-foreground"
             >
               Start Time
             </label>
@@ -141,7 +141,7 @@ export function ScheduleForm({
               type="time"
               value={startTime}
               onChange={(e) => setStartTime(e.target.value)}
-              className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
               required
             />
           </div>
@@ -150,7 +150,7 @@ export function ScheduleForm({
           <div>
             <label
               htmlFor="schedule-end"
-              className="mb-1 block text-xs font-medium text-[#60646c]"
+              className="mb-1 block text-xs font-medium text-muted-foreground"
             >
               End Time
             </label>
@@ -159,18 +159,18 @@ export function ScheduleForm({
               type="time"
               value={endTime}
               onChange={(e) => setEndTime(e.target.value)}
-              className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
               required
             />
           </div>
 
           {/* Enabled */}
-          <label className="flex items-center gap-2 text-sm text-[#171717]">
+          <label className="flex items-center gap-2 text-sm text-foreground">
             <input
               type="checkbox"
               checked={enabled}
               onChange={(e) => setEnabled(e.target.checked)}
-              className="h-4 w-4 rounded border-[#dcdee0] accent-[#171717]"
+              className="h-4 w-4 rounded border-border accent-primary"
             />
             Enabled
           </label>
@@ -180,13 +180,13 @@ export function ScheduleForm({
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-md border border-[#dcdee0] bg-white px-4 py-2 text-sm font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3]"
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-md bg-[#171717] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2a2a2a]"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
             >
               {isEdit ? "Update" : "Create"}
             </button>

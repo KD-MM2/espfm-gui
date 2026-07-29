@@ -44,19 +44,19 @@ export function FanTempChart({
   const hasTemp = tempNames.length > 0;
 
   return (
-    <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-[#171717]">
+        <h2 className="text-sm font-semibold text-foreground">
           Fan RPM & Temperature
         </h2>
         <div className="flex items-center gap-3">
           {/* Bucket size selector */}
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] text-[#999]">Group by:</span>
+            <span className="text-[11px] text-muted-foreground">Group by:</span>
             <select
               value={bucketSize}
               onChange={(e) => onBucketSizeChange(Number(e.target.value) as BucketSize)}
-              className="rounded-md border border-[#dcdee0] bg-white px-2 py-1 text-xs text-[#171717] outline-none"
+              className="rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground outline-none"
             >
               {BUCKET_OPTIONS.map((opt) => (
                 <option key={opt.value} value={opt.value}>
@@ -74,8 +74,8 @@ export function FanTempChart({
                 onClick={() => onTimeRangeChange(range.value)}
                 className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                   timeRange === range.value
-                    ? "bg-[#171717] text-white"
-                    : "bg-[#f0f0f3] text-[#60646c] hover:bg-[#dcdee0]"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted"
                 }`}
               >
                 {range.label}

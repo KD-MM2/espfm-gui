@@ -23,18 +23,18 @@ function CurveCard({
     .join(", ");
 
   return (
-    <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate text-sm font-semibold text-[#171717]">
+            <h3 className="truncate text-sm font-semibold text-foreground">
               {curve.name}
             </h3>
-            <span className="shrink-0 rounded-full bg-[#f0f0f3] px-2 py-0.5 text-[10px] font-medium text-[#60646c]">
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               {curve.points.length} {curve.points.length === 1 ? "point" : "points"}
             </span>
           </div>
-          <div className="mt-2 text-xs text-[#60646c] font-mono">
+          <div className="mt-2 text-xs text-muted-foreground font-mono">
             {pointsSummary}
           </div>
         </div>
@@ -43,7 +43,7 @@ function CurveCard({
           <button
             type="button"
             onClick={() => onEdit(curve)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#f0f0f3]"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted"
             title="Edit curve"
           >
             <Pencil size={16} />
@@ -51,7 +51,7 @@ function CurveCard({
           <button
             type="button"
             onClick={() => onDelete(curve)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#fee2e2] hover:text-[#dc2626]"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             title="Delete curve"
           >
             <Trash2 size={16} />

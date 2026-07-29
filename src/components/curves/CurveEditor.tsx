@@ -170,7 +170,7 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
   return (
     <div className="space-y-3">
       {/* SVG Graph */}
-      <div className="rounded-lg border border-[#dcdee0] bg-white p-3">
+      <div className="rounded-lg border border-border bg-card p-3">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
@@ -271,29 +271,29 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
       </div>
 
       {/* Points table */}
-      <div className="overflow-x-auto rounded-lg border border-[#dcdee0] bg-white">
+      <div className="overflow-x-auto rounded-lg border border-border bg-card">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-[#dcdee0]">
-              <th className="px-4 py-2 text-left text-xs font-medium text-[#60646c]">
+            <tr className="border-b border-border">
+              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
                 #
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-[#60646c]">
+              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
                 Temperature (°C)
               </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-[#60646c]">
+              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
                 Duty (%)
               </th>
             </tr>
           </thead>
           <tbody>
             {points.map((p, i) => (
-              <tr key={i} className="border-b border-[#f0f0f3] last:border-0">
-                <td className="px-4 py-2 text-[#60646c]">{i + 1}</td>
-                <td className="px-4 py-2 font-medium text-[#171717]">
+              <tr key={i} className="border-b border-muted last:border-0">
+                <td className="px-4 py-2 text-muted-foreground">{i + 1}</td>
+                <td className="px-4 py-2 font-medium text-foreground">
                   {p.temp_c}
                 </td>
-                <td className="px-4 py-2 font-medium text-[#171717]">
+                <td className="px-4 py-2 font-medium text-foreground">
                   {p.duty}
                 </td>
               </tr>

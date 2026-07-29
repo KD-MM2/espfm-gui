@@ -79,17 +79,17 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-lg rounded-lg border border-[#dcdee0] bg-white p-4 shadow-lg"
+        className="w-full max-w-lg rounded-lg border border-border bg-card p-4 shadow-lg"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-base font-semibold text-[#171717]">
+        <h2 className="text-base font-semibold text-foreground">
           {isEdit ? "Edit Fan" : "Create Fan"}
         </h2>
 
         <form onSubmit={handleSubmit} className="mt-3 space-y-3">
           {/* Name */}
           <div>
-            <label htmlFor="fan-name" className="mb-1 block text-xs font-medium text-[#60646c]">
+            <label htmlFor="fan-name" className="mb-1 block text-xs font-medium text-muted-foreground">
               Name
             </label>
             <input
@@ -98,7 +98,7 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. CPU Fan"
-              className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none focus:border-[#171717]"
+              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-foreground"
               required
               autoFocus
             />
@@ -107,7 +107,7 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
           {/* GPIO row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="fan-pwm" className="mb-1 block text-xs font-medium text-[#60646c]">
+              <label htmlFor="fan-pwm" className="mb-1 block text-xs font-medium text-muted-foreground">
                 PWM GPIO
               </label>
               <input
@@ -118,7 +118,7 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
                 list="pwm-gpio-suggestions"
                 value={pwmGpio}
                 onChange={(e) => setPwmGpio(Number(e.target.value))}
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-foreground"
               />
               <datalist id="pwm-gpio-suggestions">
                 {PWM_GPIO_OPTIONS.map((g) => (
@@ -127,7 +127,7 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
               </datalist>
             </div>
             <div>
-              <label htmlFor="fan-tach" className="mb-1 block text-xs font-medium text-[#60646c]">
+              <label htmlFor="fan-tach" className="mb-1 block text-xs font-medium text-muted-foreground">
                 Tach GPIO
               </label>
               <input
@@ -138,7 +138,7 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
                 list="tach-gpio-suggestions"
                 value={tachGpio}
                 onChange={(e) => setTachGpio(Number(e.target.value))}
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-foreground"
               />
               <datalist id="tach-gpio-suggestions">
                 {TACH_GPIO_OPTIONS.map((g) => (
@@ -151,21 +151,21 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
           {/* Mode + Duty row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="fan-mode" className="mb-1 block text-xs font-medium text-[#60646c]">
+              <label htmlFor="fan-mode" className="mb-1 block text-xs font-medium text-muted-foreground">
                 Operation Mode
               </label>
               <select
                 id="fan-mode"
                 value={mode}
                 onChange={(e) => setMode(e.target.value)}
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-foreground"
               >
                 <option value="manual">Manual</option>
                 <option value="auto">Auto (curve-controlled)</option>
               </select>
             </div>
             <div>
-              <label htmlFor="fan-duty" className="mb-1 block text-xs font-medium text-[#60646c]">
+              <label htmlFor="fan-duty" className="mb-1 block text-xs font-medium text-muted-foreground">
                 Duty Cycle ({duty}%)
               </label>
               <input
@@ -175,7 +175,7 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
                 max={100}
                 value={duty}
                 onChange={(e) => setDuty(Number(e.target.value))}
-                className="w-full accent-[#171717]"
+                className="w-full accent-primary"
               />
             </div>
           </div>
@@ -183,14 +183,14 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
           {/* Source + Curve row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="fan-source" className="mb-1 block text-xs font-medium text-[#60646c]">
+              <label htmlFor="fan-source" className="mb-1 block text-xs font-medium text-muted-foreground">
                 Temperature Source
               </label>
               <select
                 id="fan-source"
                 value={sourceId}
                 onChange={(e) => setSourceId(Number(e.target.value))}
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-foreground"
               >
                 <option value={NONE_VALUE}>None</option>
                 {sources.map((s) => (
@@ -201,14 +201,14 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
               </select>
             </div>
             <div>
-              <label htmlFor="fan-curve" className="mb-1 block text-xs font-medium text-[#60646c]">
+              <label htmlFor="fan-curve" className="mb-1 block text-xs font-medium text-muted-foreground">
                 Fan Curve
               </label>
               <select
                 id="fan-curve"
                 value={curveId}
                 onChange={(e) => setCurveId(Number(e.target.value))}
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-foreground"
               >
                 <option value={NONE_VALUE}>None</option>
                 {curves.map((c) => (
@@ -223,14 +223,14 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
           {/* Schedule + Group row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label htmlFor="fan-schedule" className="mb-1 block text-xs font-medium text-[#60646c]">
+              <label htmlFor="fan-schedule" className="mb-1 block text-xs font-medium text-muted-foreground">
                 Schedule
               </label>
               <select
                 id="fan-schedule"
                 value={scheduleId}
                 onChange={(e) => setScheduleId(Number(e.target.value))}
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-foreground"
               >
                 <option value={NONE_VALUE}>None</option>
                 {schedules.map((s) => (
@@ -241,7 +241,7 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
               </select>
             </div>
             <div>
-              <label htmlFor="fan-group" className="mb-1 block text-xs font-medium text-[#60646c]">
+              <label htmlFor="fan-group" className="mb-1 block text-xs font-medium text-muted-foreground">
                 Group ID
               </label>
               <input
@@ -251,28 +251,28 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
                 max={255}
                 value={groupId}
                 onChange={(e) => setGroupId(Number(e.target.value))}
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:border-foreground"
               />
             </div>
           </div>
 
           {/* Checkboxes */}
           <div className="flex gap-6">
-            <label className="flex items-center gap-2 text-sm text-[#171717]">
+            <label className="flex items-center gap-2 text-sm text-foreground">
               <input
                 type="checkbox"
                 checked={inverted}
                 onChange={(e) => setInverted(e.target.checked)}
-                className="accent-[#171717]"
+                className="accent-primary"
               />
               Inverted PWM
             </label>
-            <label className="flex items-center gap-2 text-sm text-[#171717]">
+            <label className="flex items-center gap-2 text-sm text-foreground">
               <input
                 type="checkbox"
                 checked={enabled}
                 onChange={(e) => setEnabled(e.target.checked)}
-                className="accent-[#171717]"
+                className="accent-primary"
               />
               Enabled
             </label>
@@ -283,13 +283,13 @@ export function FanForm({ onSubmit, onCancel, initialData, sources, curves, sche
             <button
               type="button"
               onClick={onCancel}
-              className="rounded-md border border-[#dcdee0] bg-white px-4 py-2 text-sm font-medium text-[#171717] hover:bg-[#f0f0f3]"
+              className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-md bg-[#171717] px-4 py-2 text-sm font-medium text-white hover:bg-[#2a2a2a]"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
             >
               {isEdit ? "Update" : "Create"}
             </button>

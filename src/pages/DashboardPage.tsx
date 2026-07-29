@@ -193,8 +193,8 @@ export function DashboardPage() {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
-          <p className="text-sm text-[#60646c]">No device connected</p>
-          <p className="mt-1 text-xs text-[#999]">
+          <p className="text-sm text-muted-foreground">No device connected</p>
+          <p className="mt-1 text-xs text-muted-foreground">
             Go to Devices to connect to a device
           </p>
         </div>
@@ -206,8 +206,8 @@ export function DashboardPage() {
     <div className="p-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-xl font-semibold text-[#171717]">Dashboard</h1>
-        <p className="mt-1 text-sm text-[#60646c]">
+        <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
           {activeDevice?.hostname || "Unknown"} &middot;{" "}
           {activeDevice?.ipAddress || ""}
         </p>
@@ -228,8 +228,8 @@ export function DashboardPage() {
               onBucketSizeChange={setBucketSize}
             />
           ) : (
-            <div className="flex h-[324px] items-center justify-center rounded-lg border border-[#dcdee0] bg-white">
-              <p className="text-sm text-[#999]">
+            <div className="flex h-[324px] items-center justify-center rounded-lg border border-border bg-card">
+              <p className="text-sm text-muted-foreground">
                 No fans configured — create a fan to see data
               </p>
             </div>
@@ -262,11 +262,11 @@ export function DashboardPage() {
       {/* Bottom row: sources, curves, schedules, WiFi */}
       <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Sources */}
-        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Sources
             {sources.length > 0 && (
-              <span className="ml-1.5 text-xs font-normal text-[#60646c]">
+              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                 ({sources.length})
               </span>
             )}
@@ -279,30 +279,30 @@ export function DashboardPage() {
                   className="flex items-center justify-between"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium text-[#171717]">
+                    <div className="truncate text-xs font-medium text-foreground">
                       {s.name}
                     </div>
-                    <div className="text-[10px] text-[#60646c]">
+                    <div className="text-[10px] text-muted-foreground">
                       {s.source_type} &middot; {s.status}
                     </div>
                   </div>
-                  <span className="shrink-0 text-xs font-medium text-[#171717]">
+                  <span className="shrink-0 text-xs font-medium text-foreground">
                     {s.temp_c.toFixed(1)} °C
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-[#999]">No sources</p>
+            <p className="text-xs text-muted-foreground">No sources</p>
           )}
         </div>
 
         {/* Curves */}
-        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Curves
             {curves.length > 0 && (
-              <span className="ml-1.5 text-xs font-normal text-[#60646c]">
+              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                 ({curves.length})
               </span>
             )}
@@ -315,27 +315,27 @@ export function DashboardPage() {
                   className="flex items-center justify-between"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium text-[#171717]">
+                    <div className="truncate text-xs font-medium text-foreground">
                       {c.name}
                     </div>
                   </div>
-                  <span className="shrink-0 text-[10px] text-[#60646c]">
+                  <span className="shrink-0 text-[10px] text-muted-foreground">
                     {c.points.length} pts
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-[#999]">No curves</p>
+            <p className="text-xs text-muted-foreground">No curves</p>
           )}
         </div>
 
         {/* Schedules */}
-        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Schedules
             {schedules.length > 0 && (
-              <span className="ml-1.5 text-xs font-normal text-[#60646c]">
+              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
                 ({schedules.length})
               </span>
             )}
@@ -348,10 +348,10 @@ export function DashboardPage() {
                   className="flex items-center justify-between"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium text-[#171717]">
+                    <div className="truncate text-xs font-medium text-foreground">
                       Fan {sch.fan_id} &middot; {sch.duty}%
                     </div>
-                    <div className="text-[10px] text-[#60646c]">
+                    <div className="text-[10px] text-muted-foreground">
                       {Math.floor(sch.start_min / 60)}:
                       {String(sch.start_min % 60).padStart(2, "0")} –{" "}
                       {Math.floor(sch.end_min / 60)}:
@@ -371,17 +371,17 @@ export function DashboardPage() {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-[#999]">No schedules</p>
+            <p className="text-xs text-muted-foreground">No schedules</p>
           )}
         </div>
 
         {/* WiFi Status */}
-        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold text-[#171717]">WiFi</h2>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">WiFi</h2>
           {wifiStatus ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-[#60646c]">Status</span>
+                <span className="text-xs text-muted-foreground">Status</span>
                 <span
                   className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                     wifiStatus.connected
@@ -394,15 +394,15 @@ export function DashboardPage() {
               </div>
               {wifiStatus.connected && (
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#60646c]">IP</span>
-                  <span className="font-mono text-xs font-medium text-[#171717]">
+                  <span className="text-xs text-muted-foreground">IP</span>
+                  <span className="font-mono text-xs font-medium text-foreground">
                     {wifiStatus.ip}
                   </span>
                 </div>
               )}
             </div>
           ) : (
-            <p className="text-xs text-[#999]">Loading...</p>
+            <p className="text-xs text-muted-foreground">Loading...</p>
           )}
         </div>
       </div>

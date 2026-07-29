@@ -80,8 +80,8 @@ export function WifiPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#171717]">WiFi</h1>
-          <p className="mt-1 text-xs text-[#60646c]">
+          <h1 className="text-xl font-semibold text-foreground">WiFi</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
             Manage wireless network connection
           </p>
         </div>
@@ -89,7 +89,7 @@ export function WifiPage() {
           type="button"
           onClick={handleScan}
           disabled={scanning || activeDeviceId == null}
-          className="flex items-center gap-1.5 rounded-md border border-[#dcdee0] bg-white px-3.5 py-2 text-sm font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           {scanning ? (
             <Loader2 size={16} className="animate-spin" />
@@ -102,8 +102,8 @@ export function WifiPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Current WiFi Status */}
-        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Connection Status
           </h2>
           {wifiStatus ? (
@@ -112,23 +112,23 @@ export function WifiPage() {
                 {wifiStatus.connected ? (
                   <Wifi size={18} className="text-green-600" />
                 ) : (
-                  <WifiOff size={18} className="text-[#60646c]" />
+                  <WifiOff size={18} className="text-muted-foreground" />
                 )}
-                <span className="text-sm font-medium text-[#171717]">
+                <span className="text-sm font-medium text-foreground">
                   {wifiStatus.connected ? "Connected" : "Disconnected"}
                 </span>
               </div>
               {wifiStatus.connected && (
                 <div className="space-y-1.5 pl-6">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#60646c]">IP Address</span>
-                    <span className="text-sm font-mono text-[#171717]">
+                    <span className="text-xs text-muted-foreground">IP Address</span>
+                    <span className="text-sm font-mono text-foreground">
                       {wifiStatus.ip || "—"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-[#60646c]">Gateway IP</span>
-                    <span className="text-sm font-mono text-[#171717]">
+                    <span className="text-xs text-muted-foreground">Gateway IP</span>
+                    <span className="text-sm font-mono text-foreground">
                       {wifiStatus.ap_ip || "—"}
                     </span>
                   </div>
@@ -136,7 +136,7 @@ export function WifiPage() {
               )}
             </div>
           ) : (
-            <p className="text-xs text-[#60646c]">
+            <p className="text-xs text-muted-foreground">
               {activeDeviceId == null
                 ? "No device selected"
                 : "Loading status..."}
@@ -145,15 +145,15 @@ export function WifiPage() {
         </div>
 
         {/* Connect Form */}
-        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Connect to Network
           </h2>
           <div className="space-y-3">
             <div>
               <label
                 htmlFor="wifi-ssid"
-                className="mb-1 block text-xs font-medium text-[#60646c]"
+                className="mb-1 block text-xs font-medium text-muted-foreground"
               >
                 SSID
               </label>
@@ -163,13 +163,13 @@ export function WifiPage() {
                 value={ssid}
                 onChange={(e) => setSsid(e.target.value)}
                 placeholder="Network name"
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
               />
             </div>
             <div>
               <label
                 htmlFor="wifi-password"
-                className="mb-1 block text-xs font-medium text-[#60646c]"
+                className="mb-1 block text-xs font-medium text-muted-foreground"
               >
                 Password
               </label>
@@ -179,7 +179,7 @@ export function WifiPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Network password"
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
               />
             </div>
             <button
@@ -188,7 +188,7 @@ export function WifiPage() {
               disabled={
                 !ssid.trim() || connecting || activeDeviceId == null
               }
-              className="w-full rounded-md bg-[#171717] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {connecting ? "Connecting..." : "Connect"}
             </button>
@@ -198,42 +198,42 @@ export function WifiPage() {
 
       {/* Scan Results */}
       <div className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">
           Available Networks
           {scanResults.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-[#60646c]">
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
               ({scanResults.length} found)
             </span>
           )}
         </h2>
         {scanning ? (
-          <div className="flex items-center justify-center gap-2 rounded-lg border border-[#dcdee0] bg-white py-12">
-            <Loader2 size={18} className="animate-spin text-[#60646c]" />
-            <span className="text-sm text-[#60646c]">
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card py-12">
+            <Loader2 size={18} className="animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
               Scanning for networks...
             </span>
           </div>
         ) : scanResults.length > 0 ? (
-          <div className="overflow-x-auto rounded-lg border border-[#dcdee0] bg-white">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-[#dcdee0] bg-[#f8f8fa]">
-                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
+                <tr className="border-b border-border bg-muted">
+                  <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
                     SSID
                   </th>
-                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
+                  <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
                     Signal
                   </th>
-                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
+                  <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
                     RSSI
                   </th>
-                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
+                  <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
                     Channel
                   </th>
-                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
+                  <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
                     Auth
                   </th>
-                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]"></th>
+                  <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground"></th>
                   <th className="px-4 py-2.5"></th>
                 </tr>
               </thead>
@@ -241,9 +241,9 @@ export function WifiPage() {
                 {scanResults.map((ap) => (
                   <tr
                     key={ap.ssid}
-                    className="border-b border-[#dcdee0] last:border-b-0 hover:bg-[#f8f8fa]"
+                    className="border-b border-border last:border-b-0 hover:bg-muted"
                   >
-                    <td className="px-4 py-2.5 font-medium text-[#171717]">
+                    <td className="px-4 py-2.5 font-medium text-foreground">
                       {ap.ssid || "(hidden)"}
                     </td>
                     <td className="px-4 py-2.5">
@@ -254,32 +254,32 @@ export function WifiPage() {
                               key={bar}
                               className={`w-1 rounded-sm ${
                                 bar <= signalBars(ap.rssi)
-                                  ? "bg-[#171717]"
-                                  : "bg-[#dcdee0]"
+                                  ? "bg-primary"
+                                  : "bg-border"
                               }`}
                               style={{ height: `${bar * 4}px` }}
                             />
                           ))}
                         </div>
-                        <span className="text-xs text-[#60646c]">
+                        <span className="text-xs text-muted-foreground">
                           {signalLabel(ap.rssi)}
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-2.5 font-mono text-xs text-[#60646c]">
+                    <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
                       {ap.rssi} dBm
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-[#60646c]">
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground">
                       {ap.channel}
                     </td>
-                    <td className="px-4 py-2.5 text-xs text-[#60646c]">
+                    <td className="px-4 py-2.5 text-xs text-muted-foreground">
                       {ap.authmode}
                     </td>
                     <td className="px-4 py-2.5">
                       <button
                         type="button"
                         onClick={() => handleSelectAp(ap)}
-                        className="text-xs font-medium text-[#171717] underline decoration-[#dcdee0] underline-offset-2 transition-colors hover:decoration-[#171717]"
+                        className="text-xs font-medium text-foreground underline decoration-border underline-offset-2 transition-colors hover:decoration-foreground"
                       >
                         Select
                       </button>
@@ -290,9 +290,9 @@ export function WifiPage() {
             </table>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[#dcdee0] bg-white py-12">
-            <Wifi size={24} className="mb-2 text-[#dcdee0]" />
-            <p className="text-sm text-[#60646c]">
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card py-12">
+            <Wifi size={24} className="mb-2 text-border" />
+            <p className="text-sm text-muted-foreground">
               No scan results. Click Scan to discover networks.
             </p>
           </div>

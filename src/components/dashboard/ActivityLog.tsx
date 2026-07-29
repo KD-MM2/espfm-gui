@@ -8,10 +8,10 @@ export interface ActivityEntry {
 }
 
 const DOT_COLORS: Record<EventType, string> = {
-  fan: "bg-[#16a34a]",
-  temp: "bg-[#0d74ce]",
-  schedule: "bg-[#ab6400]",
-  error: "bg-[#dc2626]",
+  fan: "bg-success",
+  temp: "bg-info",
+  schedule: "bg-warning",
+  error: "bg-destructive",
 };
 
 interface ActivityLogProps {
@@ -27,13 +27,13 @@ export function ActivityLog({ entries, maxItems = 7, onShowAll, totalCount }: Ac
   const hasMore = entries.length > maxItems || total > entries.length;
 
   return (
-    <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
-      <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+    <div className="rounded-lg border border-border bg-card p-4">
+      <h2 className="mb-3 text-sm font-semibold text-foreground">
         Activity Log
       </h2>
 
       {entries.length === 0 ? (
-        <p className="py-6 text-center text-xs text-[#60646c]">
+        <p className="py-6 text-center text-xs text-muted-foreground">
           No activity yet
         </p>
       ) : (
@@ -44,8 +44,8 @@ export function ActivityLog({ entries, maxItems = 7, onShowAll, totalCount }: Ac
                 className={`mt-1 h-2 w-2 shrink-0 rounded-full ${DOT_COLORS[entry.type]}`}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-xs text-[#171717]">{entry.message}</p>
-                <p className="text-[10px] text-[#60646c]">{entry.time}</p>
+                <p className="text-xs text-foreground">{entry.message}</p>
+                <p className="text-[10px] text-muted-foreground">{entry.time}</p>
               </div>
             </div>
           ))}
@@ -53,7 +53,7 @@ export function ActivityLog({ entries, maxItems = 7, onShowAll, totalCount }: Ac
             <button
               type="button"
               onClick={onShowAll}
-              className="mt-1 w-full rounded border border-[#dcdee0] py-1.5 text-xs font-medium text-[#0d74ce] hover:bg-[#f5f6f7]"
+              className="mt-1 w-full rounded border border-border py-1.5 text-xs font-medium text-info hover:bg-muted"
             >
               Show All ({total})
             </button>

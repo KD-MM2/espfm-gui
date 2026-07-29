@@ -171,8 +171,8 @@ export function DevicesPage() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-[#171717]">Devices</h1>
-          <p className="mt-1 text-xs text-[#60646c]">
+          <h1 className="text-xl font-semibold text-foreground">Devices</h1>
+          <p className="mt-1 text-xs text-muted-foreground">
             Manage connections to ESP Fan Manager devices
           </p>
         </div>
@@ -180,7 +180,7 @@ export function DevicesPage() {
           type="button"
           onClick={handleScan}
           disabled={scanning}
-          className="flex items-center gap-1.5 rounded-md border border-[#dcdee0] bg-white px-3.5 py-2 text-sm font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3] disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
         >
           {scanning ? (
             <Loader2 size={16} className="animate-spin" />
@@ -193,8 +193,8 @@ export function DevicesPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Connected Devices */}
-        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Connected Devices
           </h2>
           {devices.length > 0 ? (
@@ -204,24 +204,24 @@ export function DevicesPage() {
                   key={device.id}
                   className={`flex items-center justify-between rounded-md border px-3 py-2.5 transition-colors ${
                     device.id === activeDeviceId
-                      ? "border-[#171717] bg-[#f8f8fa]"
-                      : "border-[#dcdee0] bg-white"
+                      ? "border-foreground bg-muted"
+                      : "border-border bg-card"
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Monitor size={16} className="text-[#60646c]" />
+                    <Monitor size={16} className="text-muted-foreground" />
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-[#171717]">
+                        <span className="text-sm font-medium text-foreground">
                           {device.hostname}
                         </span>
                         {device.id === activeDeviceId && (
-                          <span className="rounded-full bg-[#171717] px-2 py-0.5 text-[10px] font-medium text-white">
+                          <span className="rounded-full bg-primary px-2 py-0.5 text-[10px] font-medium text-primary-foreground">
                             Active
                           </span>
                         )}
                       </div>
-                      <span className="font-mono text-xs text-[#60646c]">
+                      <span className="font-mono text-xs text-muted-foreground">
                         {device.ipAddress}
                       </span>
                     </div>
@@ -233,7 +233,7 @@ export function DevicesPage() {
                       ) : (
                         <XCircle size={14} className="text-red-500" />
                       )}
-                      <span className="text-xs text-[#60646c]">
+                      <span className="text-xs text-muted-foreground">
                         {device.connected ? "Connected" : "Disconnected"}
                       </span>
                     </div>
@@ -241,7 +241,7 @@ export function DevicesPage() {
                       <button
                         type="button"
                         onClick={() => setActiveDevice(device.id)}
-                        className="rounded-md px-2 py-1 text-xs font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3]"
+                        className="rounded-md px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
                       >
                         Select
                       </button>
@@ -249,7 +249,7 @@ export function DevicesPage() {
                     <button
                       type="button"
                       onClick={() => handleDisconnect(device.id)}
-                      className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-red-50 hover:text-red-600"
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600"
                       title="Disconnect"
                     >
                       <Unplug size={14} />
@@ -260,9 +260,9 @@ export function DevicesPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-8">
-              <Monitor size={24} className="mb-2 text-[#dcdee0]" />
-              <p className="text-sm text-[#60646c]">No devices connected</p>
-              <p className="mt-1 text-xs text-[#60646c]">
+              <Monitor size={24} className="mb-2 text-border" />
+              <p className="text-sm text-muted-foreground">No devices connected</p>
+              <p className="mt-1 text-xs text-muted-foreground">
                 Scan or manually connect to get started
               </p>
             </div>
@@ -270,15 +270,15 @@ export function DevicesPage() {
         </div>
 
         {/* Manual Connect */}
-        <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+        <div className="rounded-lg border border-border bg-card p-4">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Manual Connect
           </h2>
           <div className="space-y-3">
             <div>
               <label
                 htmlFor="device-addr"
-                className="mb-1 block text-xs font-medium text-[#60646c]"
+                className="mb-1 block text-xs font-medium text-muted-foreground"
               >
                 IP Address : Port
               </label>
@@ -288,14 +288,14 @@ export function DevicesPage() {
                 value={manualAddr}
                 onChange={(e) => setManualAddr(e.target.value)}
                 placeholder="192.168.0.22:5683"
-                className="w-full rounded-md border border-[#dcdee0] bg-white px-3 py-2 font-mono text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+                className="w-full rounded-md border border-border bg-card px-3 py-2 font-mono text-sm text-foreground outline-none transition-colors focus:border-foreground"
               />
             </div>
             <button
               type="button"
               onClick={() => handleConnect(manualAddr)}
               disabled={!manualAddr.trim() || connecting}
-              className="flex w-full items-center justify-center gap-1.5 rounded-md bg-[#171717] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#2a2a2a] disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {connecting ? (
                 <Loader2 size={16} className="animate-spin" />
@@ -310,36 +310,36 @@ export function DevicesPage() {
 
       {/* Discovered Devices */}
       <div className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-[#171717]">
+        <h2 className="mb-3 text-sm font-semibold text-foreground">
           Discovered Devices
           {discovered.length > 0 && (
-            <span className="ml-2 text-xs font-normal text-[#60646c]">
+            <span className="ml-2 text-xs font-normal text-muted-foreground">
               ({discovered.length} found)
             </span>
           )}
         </h2>
         {scanning ? (
-          <div className="flex items-center justify-center gap-2 rounded-lg border border-[#dcdee0] bg-white py-12">
-            <Loader2 size={18} className="animate-spin text-[#60646c]" />
-            <span className="text-sm text-[#60646c]">
+          <div className="flex items-center justify-center gap-2 rounded-lg border border-border bg-card py-12">
+            <Loader2 size={18} className="animate-spin text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
               Scanning for devices...
             </span>
           </div>
         ) : discovered.length > 0 ? (
-          <div className="overflow-x-auto rounded-lg border border-[#dcdee0] bg-white">
+          <div className="overflow-x-auto rounded-lg border border-border bg-card">
             <table className="w-full text-left text-sm">
               <thead>
-                <tr className="border-b border-[#dcdee0] bg-[#f8f8fa]">
-                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
+                <tr className="border-b border-border bg-muted">
+                  <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
                     Hostname
                   </th>
-                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
+                  <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
                     IP Address
                   </th>
-                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
+                  <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
                     Port
                   </th>
-                  <th className="px-4 py-2.5 text-xs font-medium text-[#60646c]">
+                  <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
                     mDNS
                   </th>
                   <th className="px-4 py-2.5"></th>
@@ -353,15 +353,15 @@ export function DevicesPage() {
                   return (
                     <tr
                       key={`${device.ip}:${device.port}`}
-                      className="border-b border-[#dcdee0] last:border-b-0 hover:bg-[#f8f8fa]"
+                      className="border-b border-border last:border-b-0 hover:bg-muted"
                     >
-                      <td className="px-4 py-2.5 font-medium text-[#171717]">
+                      <td className="px-4 py-2.5 font-medium text-foreground">
                         {device.hostname || "—"}
                       </td>
-                      <td className="px-4 py-2.5 font-mono text-xs text-[#60646c]">
+                      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
                         {device.ip}
                       </td>
-                      <td className="px-4 py-2.5 font-mono text-xs text-[#60646c]">
+                      <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">
                         {device.port}
                       </td>
                       <td className="px-4 py-2.5">
@@ -372,7 +372,7 @@ export function DevicesPage() {
                           type="button"
                           onClick={() => handleConnectDiscovered(device)}
                           disabled={isConnected || connecting}
-                          className="text-xs font-medium text-[#171717] underline decoration-[#dcdee0] underline-offset-2 transition-colors hover:decoration-[#171717] disabled:cursor-not-allowed disabled:no-underline disabled:text-[#dcdee0]"
+                          className="text-xs font-medium text-foreground underline decoration-border underline-offset-2 transition-colors hover:decoration-foreground disabled:cursor-not-allowed disabled:no-underline disabled:text-border"
                         >
                           {isConnected ? "Connected" : "Connect"}
                         </button>
@@ -384,9 +384,9 @@ export function DevicesPage() {
             </table>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[#dcdee0] bg-white py-12">
-            <Search size={24} className="mb-2 text-[#dcdee0]" />
-            <p className="text-sm text-[#60646c]">
+          <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-card py-12">
+            <Search size={24} className="mb-2 text-border" />
+            <p className="text-sm text-muted-foreground">
               No devices discovered. Click mDNS Scan to search the network.
             </p>
           </div>

@@ -40,14 +40,14 @@ function SourceCard({
         : "bg-red-50 text-red-700";
 
   return (
-    <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate text-sm font-semibold text-[#171717]">
+            <h3 className="truncate text-sm font-semibold text-foreground">
               {source.name}
             </h3>
-            <span className="shrink-0 rounded-full bg-[#f0f0f3] px-2 py-0.5 text-[10px] font-medium text-[#60646c]">
+            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
               {typeLabel}
             </span>
             <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${statusColor}`}>
@@ -64,9 +64,9 @@ function SourceCard({
                     step="0.1"
                     value={manualTempInput}
                     onChange={(e) => setManualTempInput(e.target.value)}
-                    className="w-20 rounded-md border border-[#dcdee0] bg-white px-2 py-1 text-xs text-[#171717] outline-none focus:border-[#171717]"
+                    className="w-20 rounded-md border border-border bg-card px-2 py-1 text-xs text-foreground outline-none focus:border-foreground"
                   />
-                  <span className="text-xs text-[#60646c]">°C</span>
+                  <span className="text-xs text-muted-foreground">°C</span>
                 </div>
                 <button
                   type="button"
@@ -74,26 +74,26 @@ function SourceCard({
                     const val = parseFloat(manualTempInput);
                     if (!isNaN(val)) onSetManualTemp(source, val);
                   }}
-                  className="rounded-md bg-[#171717] px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-[#2a2a2a]"
+                  className="rounded-md bg-primary px-2.5 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
                 >
                   Set
                 </button>
               </div>
             ) : (
-              <div className="text-xs text-[#60646c]">
-                <span className="font-medium text-[#171717]">
+              <div className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">
                   {source.temp_c.toFixed(1)}
                 </span>{" "}
                 °C
               </div>
             )}
             {source.gpio < 255 && (
-              <div className="text-xs text-[#60646c]">
+              <div className="text-xs text-muted-foreground">
                 <span className="font-medium">GPIO</span> {source.gpio}
               </div>
             )}
             {source.rom_code && (
-              <div className="text-xs text-[#60646c]">
+              <div className="text-xs text-muted-foreground">
                 <span className="font-medium">ROM</span>{" "}
                 <span className="font-mono">{source.rom_code}</span>
               </div>
@@ -105,7 +105,7 @@ function SourceCard({
           <button
             type="button"
             onClick={() => onEdit(source)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#f0f0f3]"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted"
             title="Edit source"
           >
             <Pencil size={16} />
@@ -113,7 +113,7 @@ function SourceCard({
           <button
             type="button"
             onClick={() => onDelete(source)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#fee2e2] hover:text-[#dc2626]"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             title="Delete source"
           >
             <Trash2 size={16} />

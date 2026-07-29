@@ -28,38 +28,38 @@ function FanCard({
 }) {
   return (
     <div
-      className={`rounded-lg border border-[#dcdee0] bg-white p-4 ${
+      className={`rounded-lg border border-border bg-card p-4 ${
         !fan.enabled ? "opacity-60" : ""
       }`}
     >
       <div className="flex items-start justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h3 className="truncate text-sm font-semibold text-[#171717]">
+            <h3 className="truncate text-sm font-semibold text-foreground">
               {fan.name}
             </h3>
             {!fan.enabled && (
-              <span className="shrink-0 rounded-full bg-[#f0f0f3] px-2 py-0.5 text-[10px] font-medium text-[#60646c]">
+              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
                 Disabled
               </span>
             )}
           </div>
 
           <div className="mt-2 space-y-1">
-            <div className="flex items-center gap-1.5 text-xs text-[#60646c]">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <span className="font-medium">PWM</span>
               <span>GPIO {fan.pwm_gpio}</span>
-              <span className="text-[#dcdee0]">|</span>
+              <span className="text-border">|</span>
               <span className="font-medium">Tach</span>
               <span>GPIO {fan.tach_gpio}</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-xs text-[#60646c]">
-                <span className="font-medium text-[#171717]">{fan.rpm}</span>{" "}
+              <span className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{fan.rpm}</span>{" "}
                 RPM
               </span>
-              <span className="text-xs text-[#60646c]">
-                <span className="font-medium text-[#171717]">
+              <span className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">
                   {fan.duty_pct}
                 </span>
                 % duty
@@ -68,7 +68,7 @@ function FanCard({
                 <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${
                   fan.mode === "auto"
                     ? "bg-blue-50 text-blue-700"
-                    : "bg-[#f0f0f3] text-[#60646c]"
+                    : "bg-muted text-muted-foreground"
                 }`}>
                   {fan.mode}
                 </span>
@@ -91,11 +91,11 @@ function FanCard({
           <button
             type="button"
             onClick={() => onToggle(fan)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#f0f0f3]"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted"
             title={fan.enabled ? "Disable fan" : "Enable fan"}
           >
             {fan.enabled ? (
-              <CheckCircle2 size={16} className="text-[#16a34a]" />
+              <CheckCircle2 size={16} className="text-success" />
             ) : (
               <Circle size={16} />
             )}
@@ -103,7 +103,7 @@ function FanCard({
           <button
             type="button"
             onClick={() => onEdit(fan)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#f0f0f3]"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted"
             title="Edit fan"
           >
             <Pencil size={16} />
@@ -111,7 +111,7 @@ function FanCard({
           <button
             type="button"
             onClick={() => onDelete(fan)}
-            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#fee2e2] hover:text-[#dc2626]"
+            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
             title="Delete fan"
           >
             <Trash2 size={16} />
