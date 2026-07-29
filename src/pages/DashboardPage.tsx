@@ -252,7 +252,7 @@ export function DashboardPage() {
           />
           <ActivityLog
             entries={activity}
-            maxItems={10}
+            maxItems={7}
             onShowAll={() => navigate("/logs")}
             totalCount={activity.length}
           />

@@ -21,7 +21,7 @@ interface ActivityLogProps {
   totalCount?: number;
 }
 
-export function ActivityLog({ entries, maxItems = 10, onShowAll, totalCount }: ActivityLogProps) {
+export function ActivityLog({ entries, maxItems = 7, onShowAll, totalCount }: ActivityLogProps) {
   const visibleEntries = entries.slice(0, maxItems);
   const total = totalCount ?? entries.length;
   const hasMore = entries.length > maxItems || total > entries.length;
