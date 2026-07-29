@@ -24,10 +24,22 @@ pub struct TempSample {
 /// An activity log entry.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivityEntry {
+    pub id: i64,
     pub device_id: i64,
-    pub action: String,
-    pub detail: Option<String>,
-    pub ts: DateTime<Utc>,
+    pub event_type: String,
+    pub message: Option<String>,
+    pub details: Option<String>,
+    pub ts: String,
+}
+
+/// A saved device info entry.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DeviceInfo {
+    pub id: i64,
+    pub hostname: String,
+    pub ip_address: Option<String>,
+    pub port: Option<i32>,
+    pub last_seen: Option<String>,
 }
 
 // ── Insert functions ───────────────────────────────────────────────
@@ -61,13 +73,55 @@ pub fn insert_temp_sample(conn: &Connection, sample: &TempSample) -> SqlResult<i
 
 pub fn insert_activity(conn: &Connection, entry: &ActivityEntry) -> SqlResult<i64> {
     conn.execute(
-        "INSERT INTO activity_log (device_id, action, detail, ts) VALUES (?1, ?2, ?3, ?4)",
+        "INSERT INTO activity_log (device_id, event_type, message, details, ts) VALUES (?1, ?2, ?3, ?4, ?5)",
         params![
             entry.device_id,
-            entry.action,
-            entry.detail,
-            entry.ts.to_rfc3339(),
+            entry.event_type,
+            entry.message,
+            entry.details,
+            entry.ts,
         ],
+    )?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn insert_activity_with_details(
+    conn: &Connection,
+    device_id: i64,
+    event_type: &str,
+    message: &str,
+    details: &str,
+) -> SqlResult<i64> {
+    conn.execute(
+        "INSERT INTO activity_log (device_id, event_type, message, details, ts) VALUES (?1, ?2, ?3, ?4, datetime('now'))",
+        params![device_id, event_type, message, details],
+    )?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn insert_fan_sample_direct(
+    conn: &Connection,
+    device_id: i64,
+    fan_id: i32,
+    rpm: i32,
+    duty: f64,
+) -> SqlResult<i64> {
+    conn.execute(
+        "INSERT INTO fan_samples (device_id, fan_id, rpm, duty, ts) VALUES (?1, ?2, ?3, ?4, datetime('now'))",
+        params![device_id, fan_id, rpm, duty],
+    )?;
+    Ok(conn.last_insert_rowid())
+}
+
+pub fn insert_temp_sample_direct(
+    conn: &Connection,
+    device_id: i64,
+    source_id: i32,
+    temp_c: f64,
+) -> SqlResult<i64> {
+    conn.execute(
+        "INSERT INTO temp_samples (device_id, source_id, temp_c, ts) VALUES (?1, ?2, ?3, datetime('now'))",
+        params![device_id, source_id, temp_c],
     )?;
     Ok(conn.last_insert_rowid())
 }
@@ -127,18 +181,100 @@ pub fn get_activity_log(
     limit: u32,
 ) -> SqlResult<Vec<ActivityEntry>> {
     let mut stmt = conn.prepare(
-        "SELECT device_id, action, detail, ts FROM activity_log
+        "SELECT id, device_id, event_type, message, details, ts FROM activity_log
          WHERE device_id = ?1 ORDER BY ts DESC LIMIT ?2",
     )?;
     let rows = stmt.query_map(params![device_id, limit], |row| {
-        let ts_str: String = row.get(3)?;
         Ok(ActivityEntry {
-            device_id: row.get(0)?,
-            action: row.get(1)?,
-            detail: row.get(2)?,
-            ts: DateTime::parse_from_rfc3339(&ts_str)
-                .unwrap()
-                .with_timezone(&Utc),
+            id: row.get(0)?,
+            device_id: row.get(1)?,
+            event_type: row.get(2)?,
+            message: row.get(3)?,
+            details: row.get(4)?,
+            ts: row.get(5)?,
+        })
+    })?;
+    rows.collect()
+}
+
+pub fn get_activity_log_filtered(
+    conn: &Connection,
+    device_id: i64,
+    limit: i32,
+    offset: i32,
+    event_type: Option<&str>,
+) -> SqlResult<Vec<ActivityEntry>> {
+    let mut entries = Vec::new();
+    match event_type {
+        Some(et) => {
+            let mut stmt = conn.prepare(
+                "SELECT id, device_id, event_type, message, details, ts FROM activity_log
+                 WHERE device_id = ?1 AND event_type = ?2 ORDER BY ts DESC LIMIT ?3 OFFSET ?4",
+            )?;
+            let mut rows =
+                stmt.query_map(params![device_id, et, limit, offset], |row| {
+                    Ok(ActivityEntry {
+                        id: row.get(0)?,
+                        device_id: row.get(1)?,
+                        event_type: row.get(2)?,
+                        message: row.get(3)?,
+                        details: row.get(4)?,
+                        ts: row.get(5)?,
+                    })
+                })?;
+            while let Some(row) = rows.next() {
+                entries.push(row?);
+            }
+        }
+        None => {
+            let mut stmt = conn.prepare(
+                "SELECT id, device_id, event_type, message, details, ts FROM activity_log
+                 WHERE device_id = ?1 ORDER BY ts DESC LIMIT ?3 OFFSET ?4",
+            )?;
+            let mut rows =
+                stmt.query_map(params![device_id, limit, offset], |row| {
+                    Ok(ActivityEntry {
+                        id: row.get(0)?,
+                        device_id: row.get(1)?,
+                        event_type: row.get(2)?,
+                        message: row.get(3)?,
+                        details: row.get(4)?,
+                        ts: row.get(5)?,
+                    })
+                })?;
+            while let Some(row) = rows.next() {
+                entries.push(row?);
+            }
+        }
+    }
+    Ok(entries)
+}
+
+pub fn clear_activity_log(conn: &Connection, device_id: i64) -> SqlResult<usize> {
+    let count = conn.execute("DELETE FROM activity_log WHERE device_id = ?1", params![device_id])?;
+    Ok(count)
+}
+
+pub fn upsert_device(conn: &Connection, hostname: &str, ip: &str, port: i32) -> SqlResult<()> {
+    conn.execute(
+        "INSERT INTO devices (hostname, ip_address, port, last_seen) VALUES (?1, ?2, ?3, datetime('now'))
+         ON CONFLICT(hostname) DO UPDATE SET ip_address = ?2, port = ?3, last_seen = datetime('now')",
+        params![hostname, ip, port],
+    )?;
+    Ok(())
+}
+
+pub fn get_all_devices(conn: &Connection) -> SqlResult<Vec<DeviceInfo>> {
+    let mut stmt = conn.prepare(
+        "SELECT id, hostname, ip_address, port, last_seen FROM devices ORDER BY last_seen DESC",
+    )?;
+    let rows = stmt.query_map([], |row| {
+        Ok(DeviceInfo {
+            id: row.get(0)?,
+            hostname: row.get(1)?,
+            ip_address: row.get(2)?,
+            port: row.get(3)?,
+            last_seen: row.get(4)?,
         })
     })?;
     rows.collect()
@@ -269,11 +405,11 @@ mod tests {
             ts,
         };
 
-        let id = insert_fan_sample(conn, &sample).unwrap();
+        let id = insert_fan_sample(&conn, &sample).unwrap();
         assert!(id > 0);
 
         let since = Utc.with_ymd_and_hms(2025, 1, 15, 10, 0, 0).unwrap();
-        let samples = get_fan_samples(conn, 1, &since).unwrap();
+        let samples = get_fan_samples(&conn, 1, &since).unwrap();
         assert_eq!(samples.len(), 1);
         assert_eq!(samples[0].rpm, 1200);
         assert!((samples[0].duty - 75.5).abs() < f64::EPSILON);
@@ -292,11 +428,11 @@ mod tests {
             ts,
         };
 
-        let id = insert_temp_sample(conn, &sample).unwrap();
+        let id = insert_temp_sample(&conn, &sample).unwrap();
         assert!(id > 0);
 
         let since = Utc.with_ymd_and_hms(2025, 1, 15, 10, 0, 0).unwrap();
-        let samples = get_temp_samples(conn, 1, &since).unwrap();
+        let samples = get_temp_samples(&conn, 1, &since).unwrap();
         assert_eq!(samples.len(), 1);
         assert!((samples[0].temp_c - 42.5).abs() < f64::EPSILON);
     }
@@ -306,20 +442,21 @@ mod tests {
         let db = setup_db();
         let conn = db.conn();
 
-        let ts = Utc.with_ymd_and_hms(2025, 1, 15, 12, 0, 0).unwrap();
         let entry = ActivityEntry {
+            id: 0,
             device_id: 1,
-            action: "fan_enable".to_string(),
-            detail: Some("fan 0 enabled".to_string()),
-            ts,
+            event_type: "fan_enable".to_string(),
+            message: Some("fan 0 enabled".to_string()),
+            details: None,
+            ts: "2025-01-15T12:00:00Z".to_string(),
         };
 
-        let id = insert_activity(conn, &entry).unwrap();
+        let id = insert_activity(&conn, &entry).unwrap();
         assert!(id > 0);
 
-        let log = get_activity_log(conn, 1, 10).unwrap();
+        let log = get_activity_log(&conn, 1, 10).unwrap();
         assert_eq!(log.len(), 1);
-        assert_eq!(log[0].action, "fan_enable");
-        assert_eq!(log[0].detail.as_deref(), Some("fan 0 enabled"));
+        assert_eq!(log[0].event_type, "fan_enable");
+        assert_eq!(log[0].message.as_deref(), Some("fan 0 enabled"));
     }
 }

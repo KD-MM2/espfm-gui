@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
-import { api, type FanState } from "../lib/api";
+import { api, type FanState, type SourceState, type CurveState, type ScheduleState } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "../stores/toastStore";
 import { FanList } from "../components/fans/FanList";
@@ -12,6 +12,9 @@ export function FansPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
   const { showToast } = useToast();
   const [fans, setFans] = useState<FanState[]>([]);
+  const [sources, setSources] = useState<SourceState[]>([]);
+  const [curves, setCurves] = useState<CurveState[]>([]);
+  const [schedules, setSchedules] = useState<ScheduleState[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingFan, setEditingFan] = useState<FanState | null>(null);
 
@@ -28,6 +31,13 @@ export function FansPage() {
   useEffect(() => {
     fetchFans();
   }, [fetchFans]);
+
+  useEffect(() => {
+    if (activeDeviceId == null) return;
+    api.getSources(activeDeviceId).then(setSources).catch(() => {});
+    api.getCurves(activeDeviceId).then(setCurves).catch(() => {});
+    api.getSchedules(activeDeviceId).then(setSchedules).catch(() => {});
+  }, [activeDeviceId]);
 
   async function handleCreate(data: FanFormData) {
     if (activeDeviceId == null) return;
@@ -62,6 +72,7 @@ export function FansPage() {
         });
       }
       setFans((prev) => [...prev, final]);
+      showToast("Fan created", "success");
       closeForm();
     } catch (err) {
       showToast(`Failed to create fan: ${String(err)}`, "error");
@@ -85,6 +96,7 @@ export function FansPage() {
       setFans((prev) =>
         prev.map((f) => (f.slot === updated.slot ? updated : f))
       );
+      showToast("Fan updated", "success");
       closeForm();
     } catch (err) {
       showToast(`Failed to update fan: ${String(err)}`, "error");
@@ -100,6 +112,7 @@ export function FansPage() {
       setFans((prev) =>
         prev.map((f) => (f.slot === updated.slot ? updated : f))
       );
+      showToast(fan.enabled ? "Fan disabled" : "Fan enabled", "success");
     } catch (err) {
       showToast(`Failed to toggle fan: ${String(err)}`, "error");
     }
@@ -111,6 +124,7 @@ export function FansPage() {
     try {
       await api.deleteFan(activeDeviceId, fan.slot);
       setFans((prev) => prev.filter((f) => f.slot !== fan.slot));
+      showToast("Fan deleted", "success");
     } catch (err) {
       showToast(`Failed to delete fan: ${String(err)}`, "error");
     }
@@ -172,6 +186,9 @@ export function FansPage() {
           onSubmit={handleFormSubmit}
           onCancel={closeForm}
           initialData={editingFan}
+          sources={sources}
+          curves={curves}
+          schedules={schedules}
         />
       )}
     </div>

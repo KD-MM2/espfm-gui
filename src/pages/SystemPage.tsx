@@ -71,6 +71,7 @@ export function SystemPage() {
     setSettingHostname(true);
     try {
       await api.setHostname(activeDeviceId, hostname.trim());
+      showToast("Hostname set", "success");
       await fetchInfo();
     } catch (e) {
       showToast(`Failed to set hostname: ${String(e)}`, "error");
@@ -84,6 +85,7 @@ export function SystemPage() {
     setRebooting(true);
     try {
       await api.rebootDevice(activeDeviceId);
+      showToast("Device rebooting...", "success");
       setShowRebootDialog(false);
     } catch (e) {
       showToast(`Failed to reboot device: ${String(e)}`, "error");
@@ -98,6 +100,7 @@ export function SystemPage() {
     try {
       const config = await api.exportConfig(activeDeviceId);
       setExportedConfig(config);
+      showToast("Config exported", "success");
     } catch (e) {
       showToast(`Failed to export config: ${String(e)}`, "error");
     } finally {
@@ -127,6 +130,7 @@ export function SystemPage() {
     try {
       const text = await importFile.text();
       await api.importConfig(activeDeviceId, text);
+      showToast("Config imported", "success");
       await fetchInfo();
       setImportFile(null);
       if (fileInputRef.current) {

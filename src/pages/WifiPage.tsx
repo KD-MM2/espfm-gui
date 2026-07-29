@@ -214,7 +214,7 @@ export function WifiPage() {
             </span>
           </div>
         ) : scanResults.length > 0 ? (
-          <div className="overflow-hidden rounded-lg border border-[#dcdee0] bg-white">
+          <div className="overflow-x-auto rounded-lg border border-[#dcdee0] bg-white">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[#dcdee0] bg-[#f8f8fa]">

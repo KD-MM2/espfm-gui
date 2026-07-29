@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { FanTempChart, type ChartDataPoint } from "../components/dashboard/FanTempChart";
 import { SystemInfoCard } from "../components/dashboard/SystemInfoCard";
 import { ActivityLog, type ActivityEntry } from "../components/dashboard/ActivityLog";
@@ -18,6 +19,7 @@ type TimeRange = "30m" | "1h" | "6h" | "24h";
 const MAX_POINTS = 60; // Rolling window of data points
 
 export function DashboardPage() {
+  const navigate = useNavigate();
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
   const devices = useDeviceStore((s) => s.devices);
   const activeDevice = devices.find((d) => d.id === activeDeviceId);
@@ -40,6 +42,11 @@ export function DashboardPage() {
     try {
       const fanList = await api.getFans(activeDeviceId);
       setFans(fanList);
+
+      // Persist fan metrics to DB
+      for (const fan of fanList) {
+        api.saveFanSample(activeDeviceId, fan.slot, fan.rpm, fan.duty_pct).catch(() => {});
+      }
 
       // Build chart data point from current fan state
       const now = new Date();
@@ -64,15 +71,17 @@ export function DashboardPage() {
         const prev = prevFans.get(fan.slot);
         if (prev && prev.duty_pct !== fan.duty_pct) {
           activityIdRef.current += 1;
+          const msg = `${fan.name || `Fan ${fan.slot}`} duty → ${fan.duty_pct.toFixed(0)}%`;
           setActivity((a) => [
             {
               id: String(activityIdRef.current),
               type: "fan",
-              message: `${fan.name || `Fan ${fan.slot}`} duty → ${fan.duty_pct.toFixed(0)}%`,
+              message: msg,
               time: "just now",
             },
             ...a.slice(0, 49),
           ]);
+          api.saveLog(activeDeviceId, "fan", msg, `slot=${fan.slot}, old=${prev.duty_pct}%, new=${fan.duty_pct}%`).catch(() => {});
         }
       }
       prevFansRef.current = new Map(fanList.map((f) => [f.slot, f]));
@@ -106,6 +115,11 @@ export function DashboardPage() {
       setCurves(crv);
       setSchedules(sch);
       setWifiStatus(wifi);
+
+      // Persist temperature metrics to DB
+      for (const source of src) {
+        api.saveTempSample(activeDeviceId, source.slot, source.temp_c).catch(() => {});
+      }
     } catch (e) {
       // Non-critical — dashboard still shows fans and system info
       console.warn("Dashboard additional data fetch failed:", e);
@@ -205,7 +219,12 @@ export function DashboardPage() {
             version={systemInfo?.version || "—"}
             status={sysStatus}
           />
-          <ActivityLog entries={activity} />
+          <ActivityLog
+            entries={activity}
+            maxItems={10}
+            onShowAll={() => navigate("/logs")}
+            totalCount={activity.length}
+          />
         </div>
       </div>
 

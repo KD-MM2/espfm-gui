@@ -16,9 +16,16 @@ const DOT_COLORS: Record<EventType, string> = {
 
 interface ActivityLogProps {
   entries: ActivityEntry[];
+  maxItems?: number;
+  onShowAll?: () => void;
+  totalCount?: number;
 }
 
-export function ActivityLog({ entries }: ActivityLogProps) {
+export function ActivityLog({ entries, maxItems = 10, onShowAll, totalCount }: ActivityLogProps) {
+  const visibleEntries = entries.slice(0, maxItems);
+  const total = totalCount ?? entries.length;
+  const hasMore = entries.length > maxItems || total > entries.length;
+
   return (
     <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
       <h2 className="mb-3 text-sm font-semibold text-[#171717]">
@@ -31,7 +38,7 @@ export function ActivityLog({ entries }: ActivityLogProps) {
         </p>
       ) : (
         <div className="space-y-2.5">
-          {entries.map((entry) => (
+          {visibleEntries.map((entry) => (
             <div key={entry.id} className="flex items-start gap-2.5">
               <span
                 className={`mt-1 h-2 w-2 shrink-0 rounded-full ${DOT_COLORS[entry.type]}`}
@@ -42,6 +49,15 @@ export function ActivityLog({ entries }: ActivityLogProps) {
               </div>
             </div>
           ))}
+          {hasMore && onShowAll && (
+            <button
+              type="button"
+              onClick={onShowAll}
+              className="mt-1 w-full rounded border border-[#dcdee0] py-1.5 text-xs font-medium text-[#0d74ce] hover:bg-[#f5f6f7]"
+            >
+              Show All ({total})
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Monitor,
   Search,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { api } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
+import { useToast } from "../stores/toastStore";
 
 interface DiscoveredDevice {
   hostname: string;
@@ -25,11 +26,55 @@ export function DevicesPage() {
   const addDevice = useDeviceStore((s) => s.addDevice);
   const removeDevice = useDeviceStore((s) => s.removeDevice);
   const setConnectionStatus = useDeviceStore((s) => s.setConnectionStatus);
+  const { showToast } = useToast();
 
   const [discovered, setDiscovered] = useState<DiscoveredDevice[]>([]);
   const [scanning, setScanning] = useState(false);
   const [manualAddr, setManualAddr] = useState("");
   const [connecting, setConnecting] = useState(false);
+
+  // Auto-connect to last active device on startup
+  useEffect(() => {
+    async function restoreDevice() {
+      try {
+        const lastDeviceJson = await api.getAppState("last_active_device");
+        if (!lastDeviceJson) return;
+        const saved = JSON.parse(lastDeviceJson) as {
+          hostname: string;
+          ip: string;
+          port: number;
+        };
+        if (!saved.ip) return;
+        const addr = `${saved.ip}:${saved.port}`;
+        try {
+          const result = (await api.connectDevice(addr)) as {
+            id: number;
+            hostname: string;
+            ip: string;
+            port: number;
+          };
+          addDevice({
+            id: result.id,
+            hostname: result.hostname,
+            ipAddress: `${result.ip}:${result.port}`,
+            connected: true,
+          });
+          setActiveDevice(result.id);
+          setConnectionStatus("connected");
+        } catch {
+          addDevice({
+            id: Date.now(),
+            hostname: saved.hostname,
+            ipAddress: addr,
+            connected: false,
+          });
+        }
+      } catch {
+        // No saved state — first launch
+      }
+    }
+    restoreDevice();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleScan() {
     setScanning(true);
@@ -60,7 +105,18 @@ export function DevicesPage() {
       });
       setActiveDevice(result.id);
       setConnectionStatus("connected");
+      showToast(`Connected to ${result.hostname}`, "success");
       setManualAddr("");
+      // Persist device info and last active device
+      await api.saveDeviceInfo(result.hostname, result.ip, result.port);
+      await api.saveAppState(
+        "last_active_device",
+        JSON.stringify({
+          hostname: result.hostname,
+          ip: result.ip,
+          port: result.port,
+        })
+      );
     } catch (e) {
       alert(`Connection failed: ${e}`);
     } finally {
@@ -81,6 +137,7 @@ export function DevicesPage() {
       if (id === activeDeviceId) {
         setConnectionStatus("disconnected");
       }
+      showToast("Disconnected", "success");
     } catch (e) {
       alert(`Disconnect failed: ${e}`);
     }
@@ -246,7 +303,7 @@ export function DevicesPage() {
             </span>
           </div>
         ) : discovered.length > 0 ? (
-          <div className="overflow-hidden rounded-lg border border-[#dcdee0] bg-white">
+          <div className="overflow-x-auto rounded-lg border border-[#dcdee0] bg-white">
             <table className="w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[#dcdee0] bg-[#f8f8fa]">

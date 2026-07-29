@@ -11,7 +11,7 @@ interface CurveEditorProps {
 }
 
 const SVG_WIDTH = 600;
-const SVG_HEIGHT = 300;
+const SVG_HEIGHT = 240;
 const PADDING = { top: 20, right: 20, bottom: 40, left: 50 };
 const CHART_W = SVG_WIDTH - PADDING.left - PADDING.right;
 const CHART_H = SVG_HEIGHT - PADDING.top - PADDING.bottom;
@@ -22,7 +22,7 @@ const DUTY_MIN = 0;
 const DUTY_MAX = 100;
 
 const MIN_POINTS = 2;
-const MAX_POINTS = 8;
+const MAX_POINTS = 10;
 const POINT_RADIUS = 6;
 
 function tempToX(temp: number): number {
@@ -168,9 +168,9 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
   const dutyGridLines = [0, 20, 40, 60, 80, 100];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* SVG Graph */}
-      <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
+      <div className="rounded-lg border border-[#dcdee0] bg-white p-3">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
@@ -271,7 +271,7 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
       </div>
 
       {/* Points table */}
-      <div className="rounded-lg border border-[#dcdee0] bg-white">
+      <div className="overflow-x-auto rounded-lg border border-[#dcdee0] bg-white">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-[#dcdee0]">

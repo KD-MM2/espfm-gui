@@ -208,6 +208,8 @@ pub async fn connect_device(
     let conn = crate::state::DeviceConnection {
         client,
         hostname: hostname.clone(),
+        ip: socket_addr.ip().to_string(),
+        port: socket_addr.port(),
     };
 
     let mut connections = state.connections.lock().await;
@@ -1423,4 +1425,166 @@ pub async fn wifi_status(
         ip: status.ip,
         ap_ip: status.ap_ip,
     })
+}
+
+// ── Database commands ──────────────────────────────────────────────
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ActivityLogEntry {
+    pub id: i64,
+    pub device_id: i64,
+    pub event_type: String,
+    pub message: String,
+    pub details: String,
+    pub ts: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SavedDevice {
+    pub id: i64,
+    pub hostname: String,
+    pub ip_address: String,
+    pub port: i32,
+    pub last_seen: Option<String>,
+}
+
+#[tauri::command]
+pub async fn save_fan_sample(
+    device_id: u32,
+    slot: u8,
+    rpm: u32,
+    duty: f32,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    espfm_store::samples::insert_fan_sample_direct(
+        &state.db.conn(),
+        device_id as i64,
+        slot as i32,
+        rpm as i32,
+        duty as f64,
+    )
+    .map_err(|e| format!("save_fan_sample failed: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn save_temp_sample(
+    device_id: u32,
+    slot: u8,
+    temp_c: f32,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    espfm_store::samples::insert_temp_sample_direct(
+        &state.db.conn(),
+        device_id as i64,
+        slot as i32,
+        temp_c as f64,
+    )
+    .map_err(|e| format!("save_temp_sample failed: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn save_log(
+    device_id: u32,
+    event_type: String,
+    message: String,
+    details: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    espfm_store::samples::insert_activity_with_details(
+        &state.db.conn(),
+        device_id as i64,
+        &event_type,
+        &message,
+        &details,
+    )
+    .map_err(|e| format!("save_log failed: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_logs(
+    device_id: u32,
+    limit: i32,
+    offset: i32,
+    event_type: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<Vec<ActivityLogEntry>, String> {
+    let entries = espfm_store::samples::get_activity_log_filtered(
+        &state.db.conn(),
+        device_id as i64,
+        limit,
+        offset,
+        event_type.as_deref(),
+    )
+    .map_err(|e| format!("get_logs failed: {e}"))?;
+    Ok(entries
+        .into_iter()
+        .map(|e| ActivityLogEntry {
+            id: e.id,
+            device_id: e.device_id,
+            event_type: e.event_type,
+            message: e.message.unwrap_or_default(),
+            details: e.details.unwrap_or_default(),
+            ts: e.ts,
+        })
+        .collect())
+}
+
+#[tauri::command]
+pub async fn clear_logs(device_id: u32, state: State<'_, AppState>) -> Result<(), String> {
+    espfm_store::samples::clear_activity_log(&state.db.conn(), device_id as i64)
+        .map_err(|e| format!("clear_logs failed: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn save_app_state(
+    key: String,
+    value: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    espfm_store::app_state::set_app_state(&state.db.conn(), &key, &value)
+        .map_err(|e| format!("save_app_state failed: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_app_state(
+    key: String,
+    state: State<'_, AppState>,
+) -> Result<Option<String>, String> {
+    espfm_store::app_state::get_app_state(&state.db.conn(), &key)
+        .map_err(|e| format!("get_app_state failed: {e}"))
+}
+
+#[tauri::command]
+pub async fn save_device_info(
+    hostname: String,
+    ip: String,
+    port: u16,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    espfm_store::samples::upsert_device(&state.db.conn(), &hostname, &ip, port as i32)
+        .map_err(|e| format!("save_device_info failed: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn get_saved_devices(
+    state: State<'_, AppState>,
+) -> Result<Vec<SavedDevice>, String> {
+    let devices = espfm_store::samples::get_all_devices(&state.db.conn())
+        .map_err(|e| format!("get_saved_devices failed: {e}"))?;
+    Ok(devices
+        .into_iter()
+        .map(|d| SavedDevice {
+            id: d.id,
+            hostname: d.hostname,
+            ip_address: d.ip_address.unwrap_or_default(),
+            port: d.port.unwrap_or(5683),
+            last_seen: d.last_seen,
+        })
+        .collect())
 }

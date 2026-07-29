@@ -8,6 +8,7 @@ import {
   Calendar,
   Wifi,
   Settings,
+  ScrollText,
   Monitor,
   ChevronLeft,
   ChevronRight,
@@ -33,6 +34,7 @@ const primaryNav: NavItem[] = [
 const secondaryNav: NavItem[] = [
   { to: "/wifi", label: "WiFi", icon: <Wifi size={20} /> },
   { to: "/system", label: "System", icon: <Settings size={20} /> },
+  { to: "/logs", label: "Logs", icon: <ScrollText size={20} /> },
   { to: "/devices", label: "Devices", icon: <Monitor size={20} /> },
 ];
 

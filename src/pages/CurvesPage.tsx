@@ -6,7 +6,7 @@ import { useToast } from "../stores/toastStore";
 import { CurveList } from "../components/curves/CurveList";
 import { CurveEditor } from "../components/curves/CurveEditor";
 
-const MAX_CURVE_SLOTS = 8;
+const MAX_CURVE_SLOTS = 16;
 
 interface CurvePoint {
   temp_c: number;
@@ -75,12 +75,14 @@ export function CurvesPage() {
         setCurves((prev) =>
           prev.map((c) => (c.slot === updated.slot ? updated : c))
         );
+        showToast("Curve updated", "success");
       } else {
         const created = await api.createCurve(activeDeviceId, {
           name: curveName.trim(),
           points: editorPoints,
         });
         setCurves((prev) => [...prev, created]);
+        showToast("Curve created", "success");
       }
       closeEditor();
     } catch (err) {
@@ -94,6 +96,7 @@ export function CurvesPage() {
     try {
       await api.deleteCurve(activeDeviceId, curve.slot);
       setCurves((prev) => prev.filter((c) => c.slot !== curve.slot));
+      showToast("Curve deleted", "success");
     } catch (err) {
       showToast(`Failed to delete curve: ${String(err)}`, "error");
     }

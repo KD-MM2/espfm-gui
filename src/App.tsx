@@ -8,6 +8,7 @@ import { SchedulesPage } from "./pages/SchedulesPage";
 import { WifiPage } from "./pages/WifiPage";
 import { SystemPage } from "./pages/SystemPage";
 import { DevicesPage } from "./pages/DevicesPage";
+import { LogsPage } from "./pages/LogsPage";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
           <Route path="/schedules" element={<SchedulesPage />} />
           <Route path="/wifi" element={<WifiPage />} />
           <Route path="/system" element={<SystemPage />} />
+          <Route path="/logs" element={<LogsPage />} />
           <Route path="/devices" element={<DevicesPage />} />
         </Route>
       </Routes>

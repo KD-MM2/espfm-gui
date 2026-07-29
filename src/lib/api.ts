@@ -64,6 +64,21 @@ export interface Ds18b20Device {
   rom_code: string;
   temp_c: number;
 }
+export interface ActivityLogEntry {
+  id: number;
+  device_id: number;
+  event_type: string;
+  message: string;
+  details: string;
+  ts: string;
+}
+export interface SavedDevice {
+  id: number;
+  hostname: string;
+  ip_address: string;
+  port: number;
+  last_seen: string | null;
+}
 
 export const api = {
   discoverDevices: () => invoke<any[]>("discover_devices"),
@@ -160,4 +175,24 @@ export const api = {
     invoke("wifi_connect", { deviceId, ssid, password }),
   wifiStatus: (deviceId: number) =>
     invoke<WifiStatus>("wifi_status", { deviceId }),
+  saveFanSample: (deviceId: number, slot: number, rpm: number, duty: number) =>
+    invoke("save_fan_sample", { deviceId, slot, rpm, duty }),
+  saveTempSample: (deviceId: number, slot: number, tempC: number) =>
+    invoke("save_temp_sample", { deviceId, slot, tempC }),
+  saveLog: (
+    deviceId: number,
+    eventType: string,
+    message: string,
+    details: string
+  ) => invoke("save_log", { deviceId, eventType, message, details }),
+  getLogs: (deviceId: number, limit: number, offset: number, eventType?: string) =>
+    invoke<ActivityLogEntry[]>("get_logs", { deviceId, limit, offset, eventType }),
+  clearLogs: (deviceId: number) => invoke("clear_logs", { deviceId }),
+  saveAppState: (key: string, value: string) =>
+    invoke("save_app_state", { key, value }),
+  getAppState: (key: string) =>
+    invoke<string | null>("get_app_state", { key }),
+  saveDeviceInfo: (hostname: string, ip: string, port: number) =>
+    invoke("save_device_info", { hostname, ip, port }),
+  getSavedDevices: () => invoke<SavedDevice[]>("get_saved_devices"),
 };

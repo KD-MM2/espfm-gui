@@ -42,6 +42,7 @@ export function SourcesPage() {
     try {
       const created = await api.createSource(activeDeviceId, data);
       setSources((prev) => [...prev, created]);
+      showToast("Source created", "success");
       setShowForm(false);
     } catch (err) {
       showToast(`Failed to create source: ${String(err)}`, "error");
@@ -54,6 +55,7 @@ export function SourcesPage() {
     try {
       await api.deleteSource(activeDeviceId, source.slot);
       setSources((prev) => prev.filter((s) => s.slot !== source.slot));
+      showToast("Source deleted", "success");
     } catch (err) {
       showToast(`Failed to delete source: ${String(err)}`, "error");
     }
@@ -75,6 +77,7 @@ export function SourcesPage() {
       setSources((prev) =>
         prev.map((s) => (s.slot === source.slot ? { ...s, temp_c: tempC } : s))
       );
+      showToast("Temperature updated", "success");
     } catch (err) {
       showToast(`Failed to set temperature: ${String(err)}`, "error");
     }

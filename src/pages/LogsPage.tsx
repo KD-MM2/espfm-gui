@@ -1,0 +1,212 @@
+import { useState, useEffect, useCallback } from "react";
+import { Loader2, Trash2, ChevronLeft, ChevronRight, Server } from "lucide-react";
+import { api, type ActivityLogEntry } from "../lib/api";
+import { useDeviceStore } from "../stores/deviceStore";
+import { useToast } from "../stores/toastStore";
+import { LogDetailDialog } from "../components/logs/LogDetailDialog";
+
+const PAGE_SIZE = 50;
+
+const typeColors: Record<string, { bg: string; text: string }> = {
+  fan: { bg: "#f0fdf4", text: "#16a34a" },
+  temp: { bg: "#eff6ff", text: "#2563eb" },
+  schedule: { bg: "#fefce8", text: "#a16207" },
+  error: { bg: "#fdf2f8", text: "#be185d" },
+  system: { bg: "#f0f0f3", text: "#60646c" },
+};
+
+const LOG_TYPES = ["all", "fan", "temp", "schedule", "error", "system"] as const;
+
+export function LogsPage() {
+  const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
+  const { showToast } = useToast();
+  const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(0);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [selectedEntry, setSelectedEntry] = useState<ActivityLogEntry | null>(null);
+  const [clearing, setClearing] = useState(false);
+
+  const fetchLogs = useCallback(async () => {
+    if (activeDeviceId == null) return;
+    setLoading(true);
+    try {
+      const eventType = typeFilter === "all" ? undefined : typeFilter;
+      const data = await api.getLogs(activeDeviceId, PAGE_SIZE, page * PAGE_SIZE, eventType);
+      setLogs(data);
+    } catch (err) {
+      showToast(`Failed to load logs: ${String(err)}`, "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [activeDeviceId, page, typeFilter, showToast]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [typeFilter]);
+
+  async function handleClear() {
+    if (activeDeviceId == null) return;
+    if (!confirm("Clear all logs for this device?")) return;
+    setClearing(true);
+    try {
+      await api.clearLogs(activeDeviceId);
+      setLogs([]);
+      setPage(0);
+    } catch (err) {
+      showToast(`Failed to clear logs: ${String(err)}`, "error");
+    } finally {
+      setClearing(false);
+    }
+  }
+
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-[#171717]">Logs</h1>
+          <p className="mt-1 text-xs text-[#60646c]">
+            Activity log for the connected device
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="rounded-md border border-[#dcdee0] bg-white px-3 py-2 text-sm text-[#171717] outline-none transition-colors focus:border-[#171717]"
+          >
+            {LOG_TYPES.map((t) => (
+              <option key={t} value={t}>
+                {t === "all" ? "All Types" : t.charAt(0).toUpperCase() + t.slice(1)}
+              </option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={clearing || activeDeviceId == null || logs.length === 0}
+            className="flex items-center gap-1.5 rounded-md border border-[#dcdee0] bg-white px-3.5 py-2 text-sm font-medium text-[#dc2626] transition-colors hover:bg-[#fee2e2] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {clearing ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <Trash2 size={16} />
+            )}
+            Clear All
+          </button>
+        </div>
+      </div>
+
+      {activeDeviceId == null ? (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[#dcdee0] bg-white py-12">
+          <Server size={24} className="mb-2 text-[#dcdee0]" />
+          <p className="text-sm text-[#60646c]">
+            No device selected. Connect to a device first.
+          </p>
+        </div>
+      ) : loading ? (
+        <div className="flex items-center justify-center rounded-lg border border-[#dcdee0] bg-white py-12">
+          <Loader2 size={20} className="animate-spin text-[#60646c]" />
+        </div>
+      ) : logs.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-[#dcdee0] bg-white py-12">
+          <Server size={24} className="mb-2 text-[#dcdee0]" />
+          <p className="text-sm text-[#60646c]">No logs found.</p>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto rounded-lg border border-[#dcdee0] bg-white">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#dcdee0] bg-[#f8f8fa]">
+                  <th className="px-4 py-3 text-xs font-medium text-[#60646c]">
+                    Time
+                  </th>
+                  <th className="px-4 py-3 text-xs font-medium text-[#60646c]">
+                    Type
+                  </th>
+                  <th className="px-4 py-3 text-xs font-medium text-[#60646c]">
+                    Message
+                  </th>
+                  <th className="px-4 py-3 text-xs font-medium text-[#60646c]">
+                    Details
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((entry) => {
+                  const colors = typeColors[entry.event_type] || typeColors.system;
+                  return (
+                    <tr
+                      key={entry.id}
+                      className="cursor-pointer border-b border-[#f0f0f3] transition-colors hover:bg-[#f8f8fa]"
+                      onClick={() => setSelectedEntry(entry)}
+                    >
+                      <td className="whitespace-nowrap px-4 py-2.5 font-mono text-xs text-[#60646c]">
+                        {entry.ts}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span
+                          className="inline-block rounded-full px-2 py-0.5 text-[10px] font-medium"
+                          style={{ backgroundColor: colors.bg, color: colors.text }}
+                        >
+                          {entry.event_type.toUpperCase()}
+                        </span>
+                      </td>
+                      <td className="max-w-[300px] truncate px-4 py-2.5 text-xs text-[#171717]">
+                        {entry.message}
+                      </td>
+                      <td className="max-w-[200px] truncate px-4 py-2.5 font-mono text-xs text-[#60646c]">
+                        {entry.details || "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="mt-4 flex items-center justify-between">
+            <span className="text-xs text-[#60646c]">
+              Page {page + 1} ({logs.length} entries)
+            </span>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                disabled={page === 0}
+                className="flex items-center gap-1 rounded-md border border-[#dcdee0] bg-white px-3 py-1.5 text-xs font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <ChevronLeft size={14} />
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => setPage((p) => p + 1)}
+                disabled={logs.length < PAGE_SIZE}
+                className="flex items-center gap-1 rounded-md border border-[#dcdee0] bg-white px-3 py-1.5 text-xs font-medium text-[#171717] transition-colors hover:bg-[#f0f0f3] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                Next
+                <ChevronRight size={14} />
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Detail dialog */}
+      {selectedEntry && (
+        <LogDetailDialog
+          entry={selectedEntry}
+          onClose={() => setSelectedEntry(null)}
+        />
+      )}
+    </div>
+  );
+}

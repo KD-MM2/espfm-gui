@@ -46,15 +46,15 @@ mod tests {
         let conn = db.conn();
 
         let config = r#"{"fans":[{"id":0,"name":"cpu","duty":50}]}"#;
-        let id = save_config_snapshot(conn, 1, config).unwrap();
+        let id = save_config_snapshot(&conn, 1, config).unwrap();
         assert!(id > 0);
 
-        let retrieved = get_latest_snapshot(conn, 1).unwrap();
+        let retrieved = get_latest_snapshot(&conn, 1).unwrap();
         assert!(retrieved.is_some());
         assert_eq!(retrieved.unwrap(), config);
 
         // No snapshot for non-existent device
-        let none = get_latest_snapshot(conn, 99).unwrap();
+        let none = get_latest_snapshot(&conn, 99).unwrap();
         assert!(none.is_none());
     }
 }

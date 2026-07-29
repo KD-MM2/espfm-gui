@@ -54,6 +54,7 @@ export function SchedulesPage() {
     try {
       const created = await api.createSchedule(activeDeviceId, data);
       setSchedules((prev) => [...prev, created]);
+      showToast("Schedule created", "success");
       closeForm();
     } catch (err) {
       showToast(`Failed to create schedule: ${String(err)}`, "error");
@@ -83,6 +84,7 @@ export function SchedulesPage() {
       setSchedules((prev) =>
         prev.map((s) => (s.slot === updated.slot ? updated : s))
       );
+      showToast("Schedule updated", "success");
       closeForm();
     } catch (err) {
       showToast(`Failed to update schedule: ${String(err)}`, "error");
@@ -95,6 +97,7 @@ export function SchedulesPage() {
     try {
       await api.deleteSchedule(activeDeviceId, schedule.slot);
       setSchedules((prev) => prev.filter((s) => s.slot !== schedule.slot));
+      showToast("Schedule deleted", "success");
     } catch (err) {
       showToast(`Failed to delete schedule: ${String(err)}`, "error");
     }
@@ -111,6 +114,7 @@ export function SchedulesPage() {
       setSchedules((prev) =>
         prev.map((s) => (s.slot === updated.slot ? updated : s))
       );
+      showToast(schedule.enabled ? "Schedule disabled" : "Schedule enabled", "success");
     } catch (err) {
       showToast(`Failed to toggle schedule: ${String(err)}`, "error");
     }
