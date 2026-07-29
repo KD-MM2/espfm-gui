@@ -71,7 +71,7 @@ export function DashboardPage() {
     setDetectorDevice(activeDeviceId);
 
     // Set up activity detector callback
-    setActivityCallback((message: string, details: string) => {
+    setActivityCallback((message: string, _details: string) => {
       activityIdRef.current += 1;
       setActivity((a) => [
         {
@@ -82,7 +82,6 @@ export function DashboardPage() {
         },
         ...a.slice(0, 49),
       ]);
-      console.log("Activity:", message, details);
     });
 
     // Start subscribers
@@ -91,10 +90,11 @@ export function DashboardPage() {
     startActivityDetector();
 
     // Load history then start collector
-    loadHistory(activeDeviceId, RANGE_MINUTES[timeRange]).then(() => {
-      const collector = new Collector(activeDeviceId!);
+    const deviceId = activeDeviceId;
+    void loadHistory(deviceId, RANGE_MINUTES[timeRange]).then(() => {
+      const collector = new Collector(deviceId);
       collectorRef.current = collector;
-      collector.start();
+      return collector.start();
     });
 
     return () => {
@@ -120,7 +120,7 @@ export function DashboardPage() {
       setTimeRange(range);
       clearChartBuffer();
       if (activeDeviceId) {
-        loadHistory(activeDeviceId, RANGE_MINUTES[range]);
+        void loadHistory(activeDeviceId, RANGE_MINUTES[range]);
       }
     },
     [activeDeviceId, setTimeRange]

@@ -115,8 +115,8 @@ export class TimeSeriesBuffer {
     }
 
     return points.sort((a, b) => {
-      const aTime = a.time as string;
-      const bTime = b.time as string;
+      const aTime = a.time;
+      const bTime = b.time;
       return aTime.localeCompare(bTime);
     });
   }
