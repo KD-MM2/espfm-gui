@@ -1,6 +1,6 @@
 import { toast } from "sonner";
 
-export function useToast() {
+export function useToast(): { showToast: (message: string, type: "success" | "warning" | "error") => void } {
   return {
     showToast: (message: string, type: "success" | "warning" | "error") => {
       if (type === "success") toast.success(message);

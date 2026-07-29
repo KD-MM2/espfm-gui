@@ -75,7 +75,7 @@ export function FanTempChart({
                 className={`rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
                   timeRange === range.value
                     ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted"
+                    : "bg-muted text-muted-foreground hover:bg-accent hover:text-accent-foreground"
                 }`}
               >
                 {range.label}

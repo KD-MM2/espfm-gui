@@ -229,9 +229,9 @@ export function DevicesPage() {
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1.5">
                       {device.connected ? (
-                        <CheckCircle2 size={14} className="text-green-600" />
+                        <CheckCircle2 size={14} className="text-success" />
                       ) : (
-                        <XCircle size={14} className="text-red-500" />
+                        <XCircle size={14} className="text-destructive" />
                       )}
                       <span className="text-xs text-muted-foreground">
                         {device.connected ? "Connected" : "Disconnected"}
@@ -249,7 +249,7 @@ export function DevicesPage() {
                     <button
                       type="button"
                       onClick={() => handleDisconnect(device.id)}
-                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-red-50 hover:text-red-600"
+                      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
                       title="Disconnect"
                     >
                       <Unplug size={14} />

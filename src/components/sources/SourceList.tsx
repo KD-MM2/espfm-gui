@@ -34,10 +34,10 @@ function SourceCard({
 
   const statusColor =
     source.status === "valid"
-      ? "bg-green-50 text-green-700"
+      ? "bg-success/10 text-success"
       : source.status === "stale"
-        ? "bg-yellow-50 text-yellow-700"
-        : "bg-red-50 text-red-700";
+        ? "bg-warning/10 text-warning"
+        : "bg-destructive/10 text-destructive";
 
   return (
     <div className="rounded-lg border border-border bg-card p-4">

@@ -361,8 +361,8 @@ export function DashboardPage() {
                   <span
                     className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                       sch.enabled
-                        ? "bg-green-50 text-green-700"
-                        : "bg-gray-100 text-gray-500"
+                        ? "bg-success/10 text-success"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {sch.enabled ? "on" : "off"}
@@ -385,8 +385,8 @@ export function DashboardPage() {
                 <span
                   className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
                     wifiStatus.connected
-                      ? "bg-green-50 text-green-700"
-                      : "bg-red-50 text-red-700"
+                      ? "bg-success/10 text-success"
+                      : "bg-destructive/10 text-destructive"
                   }`}
                 >
                   {wifiStatus.connected ? "Connected" : "Disconnected"}
