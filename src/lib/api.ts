@@ -116,6 +116,8 @@ export const api = {
       curve_id?: number;
       schedule_id?: number;
       group_id?: number;
+      pwm_gpio?: number;
+      tach_gpio?: number;
     }
   ) => invoke<FanState>("update_fan", { deviceId, slot, req }),
   deleteFan: (deviceId: number, slot: number) =>

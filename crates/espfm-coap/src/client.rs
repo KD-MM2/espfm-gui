@@ -178,7 +178,7 @@ impl CoapClient {
 
     pub async fn config_ds18b20(&self, gpio: u32) -> Result<(), CoapError> {
         let req = proto::Ds18b20ConfigRequest { gpio };
-        self.put("ds18b20/config", &req).await?;
+        self.post("ds18b20/config", &req).await?;
         Ok(())
     }
 

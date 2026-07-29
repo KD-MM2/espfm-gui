@@ -56,6 +56,8 @@ pub struct UpdateFanRequest {
     pub curve_id: Option<u32>,
     pub schedule_id: Option<u32>,
     pub group_id: Option<u32>,
+    pub pwm_gpio: Option<u32>,
+    pub tach_gpio: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -328,6 +330,8 @@ pub async fn update_fan(
         group_id: req.group_id,
         inverted: req.inverted,
         enabled: req.enabled,
+        pwm_gpio: req.pwm_gpio,
+        tach_gpio: req.tach_gpio,
     };
     let f = conn
         .client
@@ -1133,6 +1137,8 @@ pub async fn import_config(
                         group_id,
                         inverted,
                         enabled,
+                        pwm_gpio: None,
+                        tach_gpio: None,
                     };
                     conn.client
                         .update_fan(fid, &proto_req)
