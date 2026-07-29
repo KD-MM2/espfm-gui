@@ -202,6 +202,32 @@ pub fn get_temp_samples(
     rows.collect()
 }
 
+/// Get recent temp samples for chart display (last N minutes).
+pub fn get_recent_temp_samples(
+    conn: &Connection,
+    device_id: i64,
+    minutes: i64,
+) -> SqlResult<Vec<TempSample>> {
+    let mut stmt = conn.prepare(
+        "SELECT device_id, source_id, temp_c, ts FROM temp_samples
+         WHERE device_id = ?1 AND ts >= datetime('now', ?2)
+         ORDER BY ts",
+    )?;
+    let since_param = format!("-{} minutes", minutes);
+    let rows = stmt.query_map(params![device_id, since_param], |row| {
+        let ts_str: String = row.get(3)?;
+        Ok(TempSample {
+            device_id: row.get(0)?,
+            source_id: row.get(1)?,
+            temp_c: row.get(2)?,
+            ts: DateTime::parse_from_rfc3339(&ts_str)
+                .unwrap_or_default()
+                .with_timezone(&Utc),
+        })
+    })?;
+    rows.collect()
+}
+
 pub fn get_activity_log(
     conn: &Connection,
     device_id: i64,

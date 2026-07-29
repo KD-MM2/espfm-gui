@@ -1650,3 +1650,32 @@ pub async fn get_recent_fan_samples(
         })
         .collect())
 }
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct TempSamplePoint {
+    pub source_id: i32,
+    pub temp_c: f64,
+    pub ts: String,
+}
+
+#[tauri::command]
+pub async fn get_recent_temp_samples(
+    device_id: u32,
+    minutes: i64,
+    state: State<'_, AppState>,
+) -> Result<Vec<TempSamplePoint>, String> {
+    let samples = espfm_store::samples::get_recent_temp_samples(
+        &state.db.conn(),
+        device_id as i64,
+        minutes,
+    )
+    .map_err(|e| format!("get_recent_temp_samples failed: {e}"))?;
+    Ok(samples
+        .into_iter()
+        .map(|s| TempSamplePoint {
+            source_id: s.source_id,
+            temp_c: s.temp_c,
+            ts: s.ts.to_rfc3339(),
+        })
+        .collect())
+}

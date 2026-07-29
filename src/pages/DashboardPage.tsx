@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { FanTempChart, type ChartDataPoint } from "../components/dashboard/FanTempChart";
+import { FanTempChart } from "../components/dashboard/FanTempChart";
 import { SystemInfoCard } from "../components/dashboard/SystemInfoCard";
 import { ActivityLog, type ActivityEntry } from "../components/dashboard/ActivityLog";
 import {
   api,
-  type FanState,
   type SystemInfo,
   type SourceState,
   type CurveState,
@@ -13,10 +12,25 @@ import {
   type WifiStatus,
 } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
-
-type TimeRange = "30m" | "1h" | "6h" | "24h";
-
-const MAX_POINTS = 60; // Rolling window of data points
+import {
+  useChartStore,
+  startChartStore,
+  stopChartStore,
+  clearChartBuffer,
+} from "../stores/chartStore";
+import { Collector, loadHistory } from "../lib/collectors";
+import {
+  startSqliteWriter,
+  stopSqliteWriter,
+  setWriterDevice,
+} from "../lib/sqliteWriter";
+import {
+  startActivityDetector,
+  stopActivityDetector,
+  setDetectorDevice,
+  setActivityCallback,
+} from "../lib/activityDetector";
+import type { TimeRange } from "../lib/timeSeriesBuffer";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -24,84 +38,104 @@ export function DashboardPage() {
   const devices = useDeviceStore((s) => s.devices);
   const activeDevice = devices.find((d) => d.id === activeDeviceId);
 
-  const [timeRange, setTimeRange] = useState<TimeRange>("1h");
-  const [fans, setFans] = useState<FanState[]>([]);
+  const chartData = useChartStore((s) => s.chartData);
+  const fanNames = useChartStore((s) => s.fanNames);
+  const tempNames = useChartStore((s) => s.tempNames);
+  const timeRange = useChartStore((s) => s.timeRange);
+  const setTimeRange = useChartStore((s) => s.setTimeRange);
+
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
-  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
-  const [error, setError] = useState<string | null>(null);
   const [sources, setSources] = useState<SourceState[]>([]);
   const [curves, setCurves] = useState<CurveState[]>([]);
   const [schedules, setSchedules] = useState<ScheduleState[]>([]);
   const [wifiStatus, setWifiStatus] = useState<WifiStatus | null>(null);
   const activityIdRef = useRef(0);
-  const prevFansRef = useRef<Map<number, FanState>>(new Map());
+  const collectorRef = useRef<Collector | null>(null);
 
-  const fetchFanData = useCallback(async () => {
+  const RANGE_MINUTES: Record<TimeRange, number> = {
+    "30m": 30,
+    "1h": 60,
+    "6h": 360,
+    "24h": 1440,
+  };
+
+  // Start event-driven pipeline on mount
+  useEffect(() => {
     if (!activeDeviceId) return;
-    try {
-      const fanList = await api.getFans(activeDeviceId);
-      setFans(fanList);
 
-      // Persist fan metrics to DB
-      for (const fan of fanList) {
-        api.saveFanSample(activeDeviceId, fan.slot, fan.rpm, fan.duty_pct).catch(() => {});
+    // Configure writer and detector
+    setWriterDevice(activeDeviceId);
+    setDetectorDevice(activeDeviceId);
+
+    // Set up activity detector callback
+    setActivityCallback((message: string, details: string) => {
+      activityIdRef.current += 1;
+      setActivity((a) => [
+        {
+          id: String(activityIdRef.current),
+          type: "fan",
+          message,
+          time: "just now",
+        },
+        ...a.slice(0, 49),
+      ]);
+      console.log("Activity:", message, details);
+    });
+
+    // Start subscribers
+    startChartStore();
+    startSqliteWriter();
+    startActivityDetector();
+
+    // Load history then start collector
+    loadHistory(activeDeviceId, RANGE_MINUTES[timeRange]).then(() => {
+      const collector = new Collector(activeDeviceId!);
+      collectorRef.current = collector;
+      collector.start();
+    });
+
+    return () => {
+      // Stop all subscribers
+      stopChartStore();
+      stopSqliteWriter();
+      stopActivityDetector();
+      setWriterDevice(null);
+      setDetectorDevice(null);
+      setActivityCallback(null);
+
+      // Stop collector
+      if (collectorRef.current) {
+        collectorRef.current.stop();
+        collectorRef.current = null;
       }
-
-      // Build chart data point from current fan state
-      const now = new Date();
-      const timeLabel = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
-      const point: ChartDataPoint = { time: timeLabel };
-
-      for (const fan of fanList) {
-        point[fan.name || `Fan ${fan.slot}`] = fan.rpm;
-      }
-
-      // Use first source temperature if available (placeholder — sources not fetched here)
-      // For now, skip temperature line if no source data
-
-      setChartData((prev) => {
-        const next = [...prev, point];
-        return next.length > MAX_POINTS ? next.slice(next.length - MAX_POINTS) : next;
-      });
-
-      // Detect changes for activity log
-      const prevFans = prevFansRef.current;
-      for (const fan of fanList) {
-        const prev = prevFans.get(fan.slot);
-        if (prev && prev.duty_pct !== fan.duty_pct) {
-          activityIdRef.current += 1;
-          const msg = `${fan.name || `Fan ${fan.slot}`} duty → ${fan.duty_pct.toFixed(0)}%`;
-          setActivity((a) => [
-            {
-              id: String(activityIdRef.current),
-              type: "fan",
-              message: msg,
-              time: "just now",
-            },
-            ...a.slice(0, 49),
-          ]);
-          api.saveLog(activeDeviceId, "fan", msg, `slot=${fan.slot}, old=${prev.duty_pct}%, new=${fan.duty_pct}%`).catch(() => {});
-        }
-      }
-      prevFansRef.current = new Map(fanList.map((f) => [f.slot, f]));
-      setError(null);
-    } catch (e) {
-      setError(`Failed to fetch fans: ${e}`);
-    }
+    };
   }, [activeDeviceId]);
 
+  // Handle time range change
+  const handleTimeRangeChange = useCallback(
+    (range: TimeRange) => {
+      setTimeRange(range);
+      clearChartBuffer();
+      if (activeDeviceId) {
+        loadHistory(activeDeviceId, RANGE_MINUTES[range]);
+      }
+    },
+    [activeDeviceId, setTimeRange]
+  );
+
+  // System info polling
   const fetchSystemInfo = useCallback(async () => {
     if (!activeDeviceId) return;
     try {
       const info = await api.getSystemInfo(activeDeviceId);
       setSystemInfo(info);
     } catch (e) {
-      // System info polling is non-critical
       console.warn("System info fetch failed:", e);
     }
   }, [activeDeviceId]);
 
+  // Additional data polling (sources, curves, schedules, wifi)
   const fetchAdditionalData = useCallback(async () => {
     if (!activeDeviceId) return;
     try {
@@ -115,81 +149,26 @@ export function DashboardPage() {
       setCurves(crv);
       setSchedules(sch);
       setWifiStatus(wifi);
-
-      // Persist temperature metrics to DB
-      for (const source of src) {
-        api.saveTempSample(activeDeviceId, source.slot, source.temp_c).catch(() => {});
-      }
     } catch (e) {
-      // Non-critical — dashboard still shows fans and system info
       console.warn("Dashboard additional data fetch failed:", e);
     }
   }, [activeDeviceId]);
 
-  // Load historical chart data from SQLite on mount
-  useEffect(() => {
-    if (!activeDeviceId) return;
-    async function loadHistory() {
-      try {
-        const samples = await api.getRecentFanSamples(activeDeviceId!, 60);
-        if (samples.length === 0) return;
-
-        // Group by fan_id, then by time bucket (1-minute)
-        const buckets = new Map<string, Map<number, { sum: number; count: number }>>();
-        for (const s of samples) {
-          const d = new Date(s.ts);
-          const key = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-          if (!buckets.has(key)) buckets.set(key, new Map());
-          const bucket = buckets.get(key)!;
-          const prev = bucket.get(s.fan_id) || { sum: 0, count: 0 };
-          bucket.set(s.fan_id, { sum: prev.sum + s.rpm, count: prev.count + 1 });
-        }
-
-        // Fetch current fan list to get names
-        const fanList = await api.getFans(activeDeviceId!);
-        const fanNames = new Map(fanList.map((f) => [f.slot, f.name || `Fan ${f.slot}`]));
-
-        // Build chart points
-        const points: ChartDataPoint[] = [];
-        for (const [time, fanMap] of buckets) {
-          const point: ChartDataPoint = { time };
-          for (const [fanId, { sum, count }] of fanMap) {
-            const name = fanNames.get(fanId) || `Fan ${fanId}`;
-            point[name] = Math.round(sum / count);
-          }
-          points.push(point);
-        }
-
-        if (points.length > 0) {
-          setChartData(points.slice(-MAX_POINTS));
-        }
-      } catch {
-        // Non-critical — chart will populate from live data
-      }
-    }
-    loadHistory();
-  }, [activeDeviceId]);
-
-  // Fetch on mount and poll
+  // Poll system info and additional data
   useEffect(() => {
     if (!activeDeviceId) return;
 
-    // Initial fetch
-    fetchFanData();
     fetchSystemInfo();
     fetchAdditionalData();
 
-    // Poll fans every 2s, system info every 30s, additional data every 10s
-    const fanInterval = setInterval(fetchFanData, 2000);
     const sysInterval = setInterval(fetchSystemInfo, 30000);
     const extraInterval = setInterval(fetchAdditionalData, 10000);
 
     return () => {
-      clearInterval(fanInterval);
       clearInterval(sysInterval);
       clearInterval(extraInterval);
     };
-  }, [activeDeviceId, fetchFanData, fetchSystemInfo, fetchAdditionalData]);
+  }, [activeDeviceId, fetchSystemInfo, fetchAdditionalData]);
 
   // Format uptime
   function formatUptime(secs: number): string {
@@ -207,8 +186,6 @@ export function DashboardPage() {
       ? "warning"
       : "healthy"
     : "healthy";
-
-  const fanNames = fans.map((f) => f.name || `Fan ${f.slot}`);
 
   if (!activeDeviceId) {
     return (
@@ -229,11 +206,9 @@ export function DashboardPage() {
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-[#171717]">Dashboard</h1>
         <p className="mt-1 text-sm text-[#60646c]">
-          {activeDevice?.hostname || "Unknown"} &middot; {activeDevice?.ipAddress || ""}
+          {activeDevice?.hostname || "Unknown"} &middot;{" "}
+          {activeDevice?.ipAddress || ""}
         </p>
-        {error && (
-          <p className="mt-1 text-xs text-red-500">{error}</p>
-        )}
       </div>
 
       {/* Content grid: 2/3 chart, 1/3 sidebar */}
@@ -244,13 +219,15 @@ export function DashboardPage() {
             <FanTempChart
               data={chartData}
               fanNames={fanNames}
-              showTemp={false}
+              tempNames={tempNames}
               timeRange={timeRange}
-              onTimeRangeChange={setTimeRange}
+              onTimeRangeChange={handleTimeRangeChange}
             />
           ) : (
             <div className="flex h-[324px] items-center justify-center rounded-lg border border-[#dcdee0] bg-white">
-              <p className="text-sm text-[#999]">No fans configured — create a fan to see data</p>
+              <p className="text-sm text-[#999]">
+                No fans configured — create a fan to see data
+              </p>
             </div>
           )}
         </div>
@@ -258,8 +235,14 @@ export function DashboardPage() {
         {/* Right column: system info + activity */}
         <div className="flex flex-col gap-4">
           <SystemInfoCard
-            uptime={systemInfo ? formatUptime(systemInfo.uptime_secs) : "—"}
-            heapFree={systemInfo ? `${(systemInfo.heap_free / 1024).toFixed(0)} KB` : "—"}
+            uptime={
+              systemInfo ? formatUptime(systemInfo.uptime_secs) : "—"
+            }
+            heapFree={
+              systemInfo
+                ? `${(systemInfo.heap_free / 1024).toFixed(0)} KB`
+                : "—"
+            }
             version={systemInfo?.version || "—"}
             status={sysStatus}
           />
@@ -390,9 +373,7 @@ export function DashboardPage() {
 
         {/* WiFi Status */}
         <div className="rounded-lg border border-[#dcdee0] bg-white p-4">
-          <h2 className="mb-3 text-sm font-semibold text-[#171717]">
-            WiFi
-          </h2>
+          <h2 className="mb-3 text-sm font-semibold text-[#171717]">WiFi</h2>
           {wifiStatus ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
@@ -410,7 +391,7 @@ export function DashboardPage() {
               {wifiStatus.connected && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[#60646c]">IP</span>
-                  <span className="text-xs font-mono font-medium text-[#171717]">
+                  <span className="font-mono text-xs font-medium text-[#171717]">
                     {wifiStatus.ip}
                   </span>
                 </div>

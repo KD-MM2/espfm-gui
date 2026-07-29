@@ -60,6 +60,7 @@ pub fn run() {
             commands::save_device_info,
             commands::get_saved_devices,
             commands::get_recent_fan_samples,
+            commands::get_recent_temp_samples,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

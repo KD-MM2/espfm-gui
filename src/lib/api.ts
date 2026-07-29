@@ -87,6 +87,12 @@ export interface FanSamplePoint {
   ts: string;
 }
 
+export interface TempSamplePoint {
+  source_id: number;
+  temp_c: number;
+  ts: string;
+}
+
 export const api = {
   discoverDevices: () => invoke<any[]>("discover_devices"),
   connectDevice: (addr: string) => invoke<any>("connect_device", { addr }),
@@ -206,4 +212,6 @@ export const api = {
   getSavedDevices: () => invoke<SavedDevice[]>("get_saved_devices"),
   getRecentFanSamples: (deviceId: number, minutes: number) =>
     invoke<FanSamplePoint[]>("get_recent_fan_samples", { deviceId, minutes }),
+  getRecentTempSamples: (deviceId: number, minutes: number) =>
+    invoke<TempSamplePoint[]>("get_recent_temp_samples", { deviceId, minutes }),
 };
