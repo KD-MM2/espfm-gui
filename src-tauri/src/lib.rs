@@ -30,6 +30,7 @@ pub fn run() {
             commands::get_sources,
             commands::create_source,
             commands::delete_source,
+            commands::update_source,
             commands::scan_ds18b20,
             commands::config_ds18b20,
             commands::update_manual_temp,
@@ -58,6 +59,7 @@ pub fn run() {
             commands::get_app_state,
             commands::save_device_info,
             commands::get_saved_devices,
+            commands::get_recent_fan_samples,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -461,6 +461,37 @@ pub async fn delete_source(
 }
 
 #[tauri::command]
+pub async fn update_source(
+    device_id: u32,
+    slot: u8,
+    name: String,
+    state: State<'_, AppState>,
+) -> Result<SourceState, String> {
+    let connections = state.connections.lock().await;
+    let conn = connections
+        .get(&device_id)
+        .ok_or_else(|| format!("Device {device_id} not connected"))?;
+    let req = proto::SourceUpdateRequest {
+        id: slot as u32,
+        name,
+    };
+    let s = conn
+        .client
+        .update_source(slot as u32, &req)
+        .await
+        .map_err(|e| format!("update_source failed: {e}"))?;
+    Ok(SourceState {
+        slot: s.slot as u8,
+        name: s.name,
+        source_type: s.source_type,
+        temp_c: s.temp_c,
+        rom_code: s.rom_code,
+        status: s.status,
+        gpio: s.gpio as u8,
+    })
+}
+
+#[tauri::command]
 pub async fn scan_ds18b20(
     device_id: u32,
     state: State<'_, AppState>,
@@ -1585,6 +1616,37 @@ pub async fn get_saved_devices(
             ip_address: d.ip_address.unwrap_or_default(),
             port: d.port.unwrap_or(5683),
             last_seen: d.last_seen,
+        })
+        .collect())
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FanSamplePoint {
+    pub fan_id: i32,
+    pub rpm: i32,
+    pub duty: f64,
+    pub ts: String,
+}
+
+#[tauri::command]
+pub async fn get_recent_fan_samples(
+    device_id: u32,
+    minutes: i64,
+    state: State<'_, AppState>,
+) -> Result<Vec<FanSamplePoint>, String> {
+    let samples = espfm_store::samples::get_recent_fan_samples(
+        &state.db.conn(),
+        device_id as i64,
+        minutes,
+    )
+    .map_err(|e| format!("get_recent_fan_samples failed: {e}"))?;
+    Ok(samples
+        .into_iter()
+        .map(|s| FanSamplePoint {
+            fan_id: s.fan_id,
+            rpm: s.rpm,
+            duty: s.duty,
+            ts: s.ts.to_rfc3339(),
         })
         .collect())
 }

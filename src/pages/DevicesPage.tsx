@@ -33,7 +33,7 @@ export function DevicesPage() {
   const [manualAddr, setManualAddr] = useState("");
   const [connecting, setConnecting] = useState(false);
 
-  // Auto-connect to last active device on startup
+  // Auto-connect to last active device on startup (once only)
   useEffect(() => {
     async function restoreDevice() {
       try {
@@ -46,6 +46,28 @@ export function DevicesPage() {
         };
         if (!saved.ip) return;
         const addr = `${saved.ip}:${saved.port}`;
+
+        // Check if device already exists in store (avoid duplicates)
+        const existing = useDeviceStore.getState().devices.find(
+          (d) => d.ipAddress === addr
+        );
+        if (existing) {
+          if (!existing.connected) {
+            // Try to reconnect existing device
+            try {
+              await api.connectDevice(addr);
+              useDeviceStore.getState().devices.forEach((d) => {
+                if (d.ipAddress === addr) {
+                  // Update connected status via store
+                }
+              });
+            } catch {
+              // Stay disconnected
+            }
+          }
+          return;
+        }
+
         try {
           const result = (await api.connectDevice(addr)) as {
             id: number;

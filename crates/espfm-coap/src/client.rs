@@ -145,6 +145,17 @@ impl CoapClient {
         Ok(TempSource::from(info))
     }
 
+    pub async fn update_source(
+        &self,
+        slot: u32,
+        req: &proto::SourceUpdateRequest,
+    ) -> Result<TempSource, CoapError> {
+        let path = format!("sources/{}", slot);
+        let data = self.put(&path, req).await?;
+        let info: proto::SourceInfo = codec::decode(&data)?;
+        Ok(TempSource::from(info))
+    }
+
     pub async fn delete_source(&self, slot: u32) -> Result<(), CoapError> {
         let path = format!("sources/{}", slot);
         self.delete(&path).await?;

@@ -23,7 +23,9 @@ export function SourceForm({
   const [sourceType, setSourceType] = useState<string>(
     initialData?.source_type ?? SOURCE_TYPE_OPTIONS[0]
   );
-  const [gpio, setGpio] = useState<string>("");
+  const [gpio, setGpio] = useState<string>(
+    initialData?.gpio != null && initialData.gpio < 255 ? String(initialData.gpio) : ""
+  );
   const [romCode, setRomCode] = useState<string>(initialData?.rom_code ?? "");
 
   const isEdit = initialData != null;

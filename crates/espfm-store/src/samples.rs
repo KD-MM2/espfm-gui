@@ -152,6 +152,33 @@ pub fn get_fan_samples(
     rows.collect()
 }
 
+/// Get recent fan samples for chart display (last N minutes).
+pub fn get_recent_fan_samples(
+    conn: &Connection,
+    device_id: i64,
+    minutes: i64,
+) -> SqlResult<Vec<FanSample>> {
+    let mut stmt = conn.prepare(
+        "SELECT device_id, fan_id, rpm, duty, ts FROM fan_samples
+         WHERE device_id = ?1 AND ts >= datetime('now', ?2)
+         ORDER BY ts",
+    )?;
+    let since_param = format!("-{} minutes", minutes);
+    let rows = stmt.query_map(params![device_id, since_param], |row| {
+        let ts_str: String = row.get(4)?;
+        Ok(FanSample {
+            device_id: row.get(0)?,
+            fan_id: row.get(1)?,
+            rpm: row.get(2)?,
+            duty: row.get(3)?,
+            ts: DateTime::parse_from_rfc3339(&ts_str)
+                .unwrap_or_default()
+                .with_timezone(&Utc),
+        })
+    })?;
+    rows.collect()
+}
+
 pub fn get_temp_samples(
     conn: &Connection,
     device_id: i64,
@@ -229,7 +256,7 @@ pub fn get_activity_log_filtered(
         None => {
             let mut stmt = conn.prepare(
                 "SELECT id, device_id, event_type, message, details, ts FROM activity_log
-                 WHERE device_id = ?1 ORDER BY ts DESC LIMIT ?3 OFFSET ?4",
+                 WHERE device_id = ?1 ORDER BY ts DESC LIMIT ?2 OFFSET ?3",
             )?;
             let mut rows =
                 stmt.query_map(params![device_id, limit, offset], |row| {

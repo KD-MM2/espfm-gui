@@ -80,6 +80,13 @@ export interface SavedDevice {
   last_seen: string | null;
 }
 
+export interface FanSamplePoint {
+  fan_id: number;
+  rpm: number;
+  duty: number;
+  ts: string;
+}
+
 export const api = {
   discoverDevices: () => invoke<any[]>("discover_devices"),
   connectDevice: (addr: string) => invoke<any>("connect_device", { addr }),
@@ -115,6 +122,8 @@ export const api = {
   ) => invoke<SourceState>("create_source", { deviceId, req }),
   deleteSource: (deviceId: number, slot: number) =>
     invoke("delete_source", { deviceId, slot }),
+  updateSource: (deviceId: number, slot: number, name: string) =>
+    invoke<SourceState>("update_source", { deviceId, slot, name }),
   scanDs18b20: (deviceId: number) =>
     invoke<Ds18b20Device[]>("scan_ds18b20", { deviceId }),
   configDs18b20: (deviceId: number, gpio: number) =>
@@ -195,4 +204,6 @@ export const api = {
   saveDeviceInfo: (hostname: string, ip: string, port: number) =>
     invoke("save_device_info", { hostname, ip, port }),
   getSavedDevices: () => invoke<SavedDevice[]>("get_saved_devices"),
+  getRecentFanSamples: (deviceId: number, minutes: number) =>
+    invoke<FanSamplePoint[]>("get_recent_fan_samples", { deviceId, minutes }),
 };

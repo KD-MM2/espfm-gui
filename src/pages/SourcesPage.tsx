@@ -15,6 +15,7 @@ export function SourcesPage() {
   const [sources, setSources] = useState<SourceState[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
+  const [editingSource, setEditingSource] = useState<SourceState | null>(null);
 
   const fetchSources = useCallback(async () => {
     if (activeDeviceId == null) return;
@@ -61,13 +62,66 @@ export function SourcesPage() {
     }
   }
 
+  function handleEdit(source: SourceState) {
+    setEditingSource(source);
+    setShowForm(true);
+  }
+
+  async function handleUpdate(data: {
+    name: string;
+    source_type: string;
+    gpio?: number;
+    rom_code?: string;
+  }) {
+    if (activeDeviceId == null || editingSource == null) return;
+
+    // Check if only name changed (PUT /sources/{id} only supports name)
+    const nameChanged = data.name !== editingSource.name;
+    const typeChanged = data.source_type !== editingSource.source_type;
+    const gpioChanged = (data.gpio ?? 255) !== editingSource.gpio;
+    const romChanged = (data.rom_code ?? "") !== (editingSource.rom_code ?? "");
+
+    if (nameChanged && !typeChanged && !gpioChanged && !romChanged) {
+      // Only name changed — use updateSource
+      try {
+        await api.updateSource(activeDeviceId, editingSource.slot, data.name);
+        setSources((prev) =>
+          prev.map((s) =>
+            s.slot === editingSource.slot ? { ...s, name: data.name } : s
+          )
+        );
+        showToast("Source updated", "success");
+        closeForm();
+      } catch (err) {
+        showToast(`Failed to update source: ${String(err)}`, "error");
+      }
+    } else {
+      // Other fields changed — delete + recreate
+      try {
+        await api.deleteSource(activeDeviceId, editingSource.slot);
+        const created = await api.createSource(activeDeviceId, data);
+        setSources((prev) =>
+          prev.map((s) => (s.slot === editingSource.slot ? created : s))
+        );
+        showToast("Source recreated", "success");
+        closeForm();
+      } catch (err) {
+        showToast(`Failed to update source: ${String(err)}`, "error");
+      }
+    }
+  }
+
   function handleFormSubmit(data: {
     name: string;
     source_type: string;
     gpio?: number;
     rom_code?: string;
   }) {
-    handleCreate(data);
+    if (editingSource) {
+      handleUpdate(data);
+    } else {
+      handleCreate(data);
+    }
   }
 
   async function handleSetManualTemp(source: SourceState, tempC: number) {
@@ -106,6 +160,7 @@ export function SourcesPage() {
 
   function closeForm() {
     setShowForm(false);
+    setEditingSource(null);
   }
 
   return (
@@ -143,6 +198,7 @@ export function SourcesPage() {
       <SourceList
         sources={sources}
         onDelete={handleDelete}
+        onEdit={handleEdit}
         onCreateFirst={() => setShowForm(true)}
         onSetManualTemp={handleSetManualTemp}
       />
@@ -152,6 +208,7 @@ export function SourcesPage() {
         <SourceForm
           onSubmit={handleFormSubmit}
           onCancel={closeForm}
+          initialData={editingSource}
         />
       )}
 

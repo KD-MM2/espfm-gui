@@ -1,11 +1,12 @@
 import { useState } from "react";
-import { Thermometer, Trash2 } from "lucide-react";
+import { Thermometer, Trash2, Pencil } from "lucide-react";
 import type { SourceState } from "../../lib/api";
 import { EmptyState } from "../ui/EmptyState";
 
 interface SourceListProps {
   sources: SourceState[];
   onDelete: (source: SourceState) => void;
+  onEdit: (source: SourceState) => void;
   onCreateFirst: () => void;
   onSetManualTemp?: (source: SourceState, tempC: number) => void;
 }
@@ -13,10 +14,12 @@ interface SourceListProps {
 function SourceCard({
   source,
   onDelete,
+  onEdit,
   onSetManualTemp,
 }: {
   source: SourceState;
   onDelete: (source: SourceState) => void;
+  onEdit: (source: SourceState) => void;
   onSetManualTemp?: (source: SourceState, tempC: number) => void;
 }) {
   const [manualTempInput, setManualTempInput] = useState(
@@ -101,6 +104,14 @@ function SourceCard({
         <div className="flex shrink-0 items-center gap-1">
           <button
             type="button"
+            onClick={() => onEdit(source)}
+            className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#f0f0f3]"
+            title="Edit source"
+          >
+            <Pencil size={16} />
+          </button>
+          <button
+            type="button"
             onClick={() => onDelete(source)}
             className="rounded-md p-1.5 text-[#60646c] transition-colors hover:bg-[#fee2e2] hover:text-[#dc2626]"
             title="Delete source"
@@ -116,6 +127,7 @@ function SourceCard({
 export function SourceList({
   sources,
   onDelete,
+  onEdit,
   onCreateFirst,
   onSetManualTemp,
 }: SourceListProps) {
@@ -138,6 +150,7 @@ export function SourceList({
           key={source.slot}
           source={source}
           onDelete={onDelete}
+          onEdit={onEdit}
           onSetManualTemp={onSetManualTemp}
         />
       ))}

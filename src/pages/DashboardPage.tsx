@@ -126,6 +126,50 @@ export function DashboardPage() {
     }
   }, [activeDeviceId]);
 
+  // Load historical chart data from SQLite on mount
+  useEffect(() => {
+    if (!activeDeviceId) return;
+    async function loadHistory() {
+      try {
+        const samples = await api.getRecentFanSamples(activeDeviceId!, 60);
+        if (samples.length === 0) return;
+
+        // Group by fan_id, then by time bucket (1-minute)
+        const buckets = new Map<string, Map<number, { sum: number; count: number }>>();
+        for (const s of samples) {
+          const d = new Date(s.ts);
+          const key = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+          if (!buckets.has(key)) buckets.set(key, new Map());
+          const bucket = buckets.get(key)!;
+          const prev = bucket.get(s.fan_id) || { sum: 0, count: 0 };
+          bucket.set(s.fan_id, { sum: prev.sum + s.rpm, count: prev.count + 1 });
+        }
+
+        // Fetch current fan list to get names
+        const fanList = await api.getFans(activeDeviceId!);
+        const fanNames = new Map(fanList.map((f) => [f.slot, f.name || `Fan ${f.slot}`]));
+
+        // Build chart points
+        const points: ChartDataPoint[] = [];
+        for (const [time, fanMap] of buckets) {
+          const point: ChartDataPoint = { time };
+          for (const [fanId, { sum, count }] of fanMap) {
+            const name = fanNames.get(fanId) || `Fan ${fanId}`;
+            point[name] = Math.round(sum / count);
+          }
+          points.push(point);
+        }
+
+        if (points.length > 0) {
+          setChartData(points.slice(-MAX_POINTS));
+        }
+      } catch {
+        // Non-critical — chart will populate from live data
+      }
+    }
+    loadHistory();
+  }, [activeDeviceId]);
+
   // Fetch on mount and poll
   useEffect(() => {
     if (!activeDeviceId) return;
