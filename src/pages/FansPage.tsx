@@ -3,6 +3,7 @@ import { Plus } from "lucide-react";
 import { api, type FanState, type SourceState, type CurveState, type ScheduleState } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "../stores/toastStore";
+import { Button } from "@/components/ui/button";
 import { FanList } from "../components/fans/FanList";
 import { FanForm, type FanFormData } from "../components/fans/FanForm";
 
@@ -47,7 +48,6 @@ export function FansPage() {
         pwm_gpio: data.pwm_gpio,
         tach_gpio: data.tach_gpio,
       });
-      // Apply additional settings via update if needed
       const needsUpdate =
         data.mode !== "manual" ||
         data.duty !== 50 ||
@@ -160,18 +160,16 @@ export function FansPage() {
             {fans.length} of {MAX_FAN_SLOTS} slots used
           </p>
         </div>
-        <button
-          type="button"
+        <Button
           onClick={() => {
             setEditingFan(null);
             setShowForm(true);
           }}
           disabled={fans.length >= MAX_FAN_SLOTS}
-          className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Plus size={16} />
           Create Fan
-        </button>
+        </Button>
       </div>
 
       {/* Fan list */}
@@ -182,17 +180,18 @@ export function FansPage() {
         onToggle={handleToggle}
       />
 
-      {/* Form modal */}
-      {showForm && (
-        <FanForm
-          onSubmit={handleFormSubmit}
-          onCancel={closeForm}
-          initialData={editingFan}
-          sources={sources}
-          curves={curves}
-          schedules={schedules}
-        />
-      )}
+      {/* Form dialog */}
+      <FanForm
+        open={showForm}
+        onOpenChange={(open) => {
+          if (!open) closeForm();
+        }}
+        onSubmit={handleFormSubmit}
+        initialData={editingFan}
+        sources={sources}
+        curves={curves}
+        schedules={schedules}
+      />
     </div>
   );
 }
