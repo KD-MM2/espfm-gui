@@ -59,6 +59,9 @@ function NavEntry({ item, collapsed }: { item: NavItem; collapsed: boolean }) {
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const connectionStatus = useDeviceStore((s) => s.connectionStatus);
+  const devices = useDeviceStore((s) => s.devices);
+  const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
+  const activeDevice = devices.find((d) => d.id === activeDeviceId);
 
   return (
     <aside
@@ -96,12 +99,12 @@ export function Sidebar() {
 
       {/* Device selector */}
       <div className="border-t border-[#dcdee0] px-3 py-3">
-        <button
-          type="button"
+        <NavLink
+          to="/devices"
           className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm transition-colors hover:bg-[#f0f0f3] ${
             collapsed ? "justify-center" : ""
           }`}
-          title={collapsed ? "Device" : undefined}
+          title={collapsed ? (activeDevice?.hostname || "No device") : undefined}
         >
           {collapsed ? (
             <Circle
@@ -118,13 +121,18 @@ export function Sidebar() {
             <>
               <ConnectionBadge status={connectionStatus} />
               <div className="min-w-0">
-                <div className="truncate text-xs text-[#60646c]">
-                  Select device
+                <div className="truncate text-xs font-medium text-[#171717]">
+                  {activeDevice?.hostname || "No device"}
                 </div>
+                {activeDevice && (
+                  <div className="truncate text-[10px] text-[#999]">
+                    {activeDevice.ipAddress}
+                  </div>
+                )}
               </div>
             </>
           )}
-        </button>
+        </NavLink>
       </div>
 
       {/* Collapse toggle */}

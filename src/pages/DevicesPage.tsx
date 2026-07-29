@@ -24,6 +24,7 @@ export function DevicesPage() {
   const setActiveDevice = useDeviceStore((s) => s.setActiveDevice);
   const addDevice = useDeviceStore((s) => s.addDevice);
   const removeDevice = useDeviceStore((s) => s.removeDevice);
+  const setConnectionStatus = useDeviceStore((s) => s.setConnectionStatus);
 
   const [discovered, setDiscovered] = useState<DiscoveredDevice[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -58,6 +59,7 @@ export function DevicesPage() {
         connected: true,
       });
       setActiveDevice(result.id);
+      setConnectionStatus("connected");
       setManualAddr("");
     } catch (e) {
       alert(`Connection failed: ${e}`);
@@ -75,8 +77,12 @@ export function DevicesPage() {
     try {
       await api.disconnectDevice(id);
       removeDevice(id);
-    } catch {
-      // TODO: surface error toast
+      // If disconnected the active device, update status
+      if (id === activeDeviceId) {
+        setConnectionStatus("disconnected");
+      }
+    } catch (e) {
+      alert(`Disconnect failed: ${e}`);
     }
   }
 
