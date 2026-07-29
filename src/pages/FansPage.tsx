@@ -92,6 +92,8 @@ export function FansPage() {
         curve_id: data.curve_id !== 255 ? data.curve_id : undefined,
         schedule_id: data.schedule_id !== 255 ? data.schedule_id : undefined,
         group_id: data.group_id !== 0 ? data.group_id : undefined,
+        pwm_gpio: data.pwm_gpio,
+        tach_gpio: data.tach_gpio,
       });
       setFans((prev) =>
         prev.map((f) => (f.slot === updated.slot ? updated : f))
