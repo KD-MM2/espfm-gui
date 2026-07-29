@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "src-tauri",
+    "crates/espfm-coap",
+    "crates/espfm-store",
+    "crates/espfm-mdns",
+]
+resolver = "2"
