@@ -1,4 +1,5 @@
 use mdns_sd::{ServiceDaemon, ServiceEvent};
+use std::collections::HashSet;
 use std::time::Duration;
 use thiserror::Error;
 
@@ -19,11 +20,14 @@ pub struct DiscoveredDevice {
 
 pub async fn discover_devices(timeout: Duration) -> Result<Vec<DiscoveredDevice>, MdnsError> {
     let mdns = ServiceDaemon::new().map_err(|e| MdnsError::DaemonError(format!("{e}")))?;
+    // Browse for _espfm._tcp (custom service with TXT records for version/firmware)
+    // The firmware registers both _coap._udp and _espfm._tcp on port 5683
     let receiver = mdns
-        .browse("_coap._udp")
+        .browse("_espfm._tcp.local.")
         .map_err(|e| MdnsError::DaemonError(format!("{e}")))?;
 
     let mut devices = Vec::new();
+    let mut seen_ips = HashSet::new();
     let deadline = tokio::time::Instant::now() + timeout;
 
     loop {
@@ -39,11 +43,14 @@ pub async fn discover_devices(timeout: Duration) -> Result<Vec<DiscoveredDevice>
                     let addresses: Vec<String> =
                         info.get_addresses().iter().map(|a| a.to_string()).collect();
                     if let Some(ip) = addresses.first() {
-                        devices.push(DiscoveredDevice {
-                            hostname,
-                            ip: ip.clone(),
-                            port: info.get_port(),
-                        });
+                        // Deduplicate by IP address
+                        if seen_ips.insert(ip.clone()) {
+                            devices.push(DiscoveredDevice {
+                                hostname,
+                                ip: ip.clone(),
+                                port: info.get_port(),
+                            });
+                        }
                     }
                 }
             }
