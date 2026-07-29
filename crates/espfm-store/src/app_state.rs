@@ -8,6 +8,11 @@ pub fn set_app_state(conn: &Connection, key: &str, value: &str) -> SqlResult<()>
     Ok(())
 }
 
+pub fn delete_app_state(conn: &Connection, key: &str) -> SqlResult<bool> {
+    let changed = conn.execute("DELETE FROM app_state WHERE key = ?1", params![key])?;
+    Ok(changed > 0)
+}
+
 pub fn get_app_state(conn: &Connection, key: &str) -> SqlResult<Option<String>> {
     let mut stmt = conn.prepare("SELECT value FROM app_state WHERE key = ?1")?;
     let mut rows = stmt.query_map(params![key], |row| row.get::<_, String>(0))?;

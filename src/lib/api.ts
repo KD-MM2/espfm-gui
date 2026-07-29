@@ -205,6 +205,8 @@ export const api = {
   clearLogs: (deviceId: number) => invoke("clear_logs", { deviceId }),
   saveAppState: (key: string, value: string) =>
     invoke("save_app_state", { key, value }),
+  deleteAppState: (key: string) =>
+    invoke<boolean>("delete_app_state", { key }),
   getAppState: (key: string) =>
     invoke<string | null>("get_app_state", { key }),
   saveDeviceInfo: (hostname: string, ip: string, port: number) =>

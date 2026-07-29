@@ -56,6 +56,7 @@ pub fn run() {
             commands::get_logs,
             commands::clear_logs,
             commands::save_app_state,
+            commands::delete_app_state,
             commands::get_app_state,
             commands::save_device_info,
             commands::get_saved_devices,

@@ -155,10 +155,10 @@ export function DevicesPage() {
     try {
       await api.disconnectDevice(id);
       removeDevice(id);
-      // If disconnected the active device, clear saved state
+      // If disconnected the active device, delete saved state
       if (id === activeDeviceId) {
         setConnectionStatus("disconnected");
-        await api.saveAppState("last_active_device", "");
+        await api.deleteAppState("last_active_device");
       }
       showToast("Disconnected", "success");
     } catch (e) {

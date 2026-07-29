@@ -1582,6 +1582,15 @@ pub async fn save_app_state(
 }
 
 #[tauri::command]
+pub async fn delete_app_state(
+    key: String,
+    state: State<'_, AppState>,
+) -> Result<bool, String> {
+    espfm_store::app_state::delete_app_state(&state.db.conn(), &key)
+        .map_err(|e| format!("delete_app_state failed: {e}"))
+}
+
+#[tauri::command]
 pub async fn get_app_state(
     key: String,
     state: State<'_, AppState>,
