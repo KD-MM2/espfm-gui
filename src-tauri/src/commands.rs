@@ -14,7 +14,8 @@ use crate::state::AppState;
 pub struct DeviceInfo {
     pub id: u32,
     pub hostname: String,
-    pub ip_address: String,
+    pub ip: String,
+    pub port: u16,
     pub connected: bool,
 }
 
@@ -147,7 +148,8 @@ pub async fn discover_devices(state: State<'_, AppState>) -> Result<Vec<DeviceIn
         result.push(DeviceInfo {
             id,
             hostname: dev.hostname.clone(),
-            ip_address: dev.ip.clone(),
+            ip: dev.ip.clone(),
+            port: dev.port,
             connected,
         });
     }
@@ -188,7 +190,8 @@ pub async fn connect_device(
     Ok(DeviceInfo {
         id,
         hostname,
-        ip_address: addr,
+        ip: socket_addr.ip().to_string(),
+        port: socket_addr.port(),
         connected: true,
     })
 }

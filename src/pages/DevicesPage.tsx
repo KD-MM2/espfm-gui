@@ -35,8 +35,8 @@ export function DevicesPage() {
     try {
       const results = await api.discoverDevices();
       setDiscovered(results as DiscoveredDevice[]);
-    } catch {
-      // TODO: surface error toast
+    } catch (e) {
+      alert(`Scan failed: ${e}`);
     } finally {
       setScanning(false);
     }
@@ -48,24 +48,27 @@ export function DevicesPage() {
       const result = (await api.connectDevice(addr)) as {
         id: number;
         hostname: string;
+        ip: string;
+        port: number;
       };
       addDevice({
         id: result.id,
         hostname: result.hostname,
-        ipAddress: addr,
+        ipAddress: `${result.ip}:${result.port}`,
         connected: true,
       });
       setActiveDevice(result.id);
       setManualAddr("");
-    } catch {
-      // TODO: surface error toast
+    } catch (e) {
+      alert(`Connection failed: ${e}`);
     } finally {
       setConnecting(false);
     }
   }
 
   async function handleConnectDiscovered(device: DiscoveredDevice) {
-    await handleConnect(`${device.ip}:${device.port}`);
+    const addr = `${device.ip}:${device.port}`;
+    await handleConnect(addr);
   }
 
   async function handleDisconnect(id: number) {
