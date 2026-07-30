@@ -209,7 +209,8 @@ export const api = {
   getLogs: (deviceId: number, limit: number, offset: number, eventType?: string) =>
     invoke<ActivityLogEntry[]>("get_logs", { deviceId, limit, offset, eventType }),
   clearLogs: (deviceId: number) => invoke("clear_logs", { deviceId }),
-  runMaintenance: (deviceId: number) => invoke("run_maintenance", { deviceId }),
+  runMaintenance: (deviceId: number) =>
+    invoke<[number, number, number, number, number]>("run_maintenance", { deviceId }),
   saveAppState: (key: string, value: string) =>
     invoke("save_app_state", { key, value }),
   deleteAppState: (key: string) =>

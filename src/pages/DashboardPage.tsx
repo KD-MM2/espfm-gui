@@ -15,7 +15,7 @@ import { useDeviceStore } from "../stores/deviceStore";
 import { useChartStore } from "../stores/chartStore";
 import { useActivityStore } from "../stores/activityStore";
 import { startMonitoringSession, changeTimeRange } from "../lib/monitoringSession";
-import type { TimeRange } from "../lib/timeSeriesBuffer";
+import { RANGE_MINUTES, type TimeRange } from "../lib/timeSeriesBuffer";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -37,13 +37,6 @@ export function DashboardPage() {
   const [curves, setCurves] = useState<CurveState[]>([]);
   const [schedules, setSchedules] = useState<ScheduleState[]>([]);
   const [wifiStatus, setWifiStatus] = useState<WifiStatus | null>(null);
-
-  const RANGE_MINUTES: Record<TimeRange, number> = {
-    "30m": 30,
-    "1h": 60,
-    "6h": 360,
-    "24h": 1440,
-  };
 
   // Start/restore monitoring session (session-scoped, survives navigation)
   useEffect(() => {
@@ -186,12 +179,13 @@ export function DashboardPage() {
           />
           <div className="flex min-h-0 flex-1 flex-col">
             <ActivityLog
-              entries={activityEntries.slice(0, 7).map((e) => ({
-                id: String(e.id),
-                type: (e.event_type as "fan" | "temp" | "schedule" | "error" | "system" | "source" | "curve") || "system",
-                message: e.message,
-                time: e.ts,
-              }))}
+              entries={activityEntries.slice(0, 7).map((e) => {
+                const KNOWN_TYPES = ["fan", "temp", "schedule", "error", "system", "source", "curve"] as const;
+                const type = (KNOWN_TYPES as readonly string[]).includes(e.event_type)
+                  ? e.event_type as typeof KNOWN_TYPES[number]
+                  : "system";
+                return { id: String(e.id), type, message: e.message, time: e.ts };
+              })}
               maxItems={7}
               onShowAll={() => navigate("/logs")}
               totalCount={activityEntries.length}

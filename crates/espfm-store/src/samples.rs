@@ -133,6 +133,8 @@ pub fn insert_fan_samples_batch(
     device_id: i64,
     samples: &[(i32, i32, f64)], // (fan_id, rpm, duty)
 ) -> SqlResult<usize> {
+    // SAFETY: unchecked_transaction is safe here because the Connection is behind
+    // a Mutex, guaranteeing no concurrent transaction on the same connection.
     let tx = conn.unchecked_transaction()?;
     {
         let mut stmt = tx.prepare(
@@ -151,6 +153,7 @@ pub fn insert_temp_samples_batch(
     device_id: i64,
     samples: &[(i32, f64)], // (source_id, temp_c)
 ) -> SqlResult<usize> {
+    // SAFETY: same as above — Mutex guarantees no concurrent transaction.
     let tx = conn.unchecked_transaction()?;
     {
         let mut stmt = tx.prepare(

@@ -3,7 +3,7 @@ import type { FanSample, ChartDataPoint } from "./fanSample";
 export type TimeRange = "30m" | "1h" | "6h" | "24h";
 export type BucketSize = 10 | 30 | 60 | 300 | 600 | 900;
 
-const RANGE_MINUTES: Record<TimeRange, number> = {
+export const RANGE_MINUTES: Record<TimeRange, number> = {
   "30m": 30,
   "1h": 60,
   "6h": 360,
@@ -49,7 +49,8 @@ export class TimeSeriesBuffer {
   }
 
   /** Merge new samples into existing buffer, preserving chronological order.
-   *  Deduplicates by timestamp — newer data wins on conflict. */
+   *  Deduplicates by timestamp — newer data wins on conflict.
+   *  Used when realtime samples arrive during a history restore window. */
   merge(incoming: FanSample[]): void {
     const byTs = new Map<number, FanSample>();
     // Existing samples first

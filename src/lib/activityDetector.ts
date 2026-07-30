@@ -1,6 +1,7 @@
 import { eventBus } from "./events";
 import { api } from "./api";
 import { useActivityStore } from "../stores/activityStore";
+import { genId } from "./logUserAction";
 import type { FanSample } from "./fanSample";
 
 let activeDeviceId: number | null = null;
@@ -9,13 +10,6 @@ const prevDuties = new Map<number, number>();
 export function setDetectorDevice(deviceId: number | null): void {
   activeDeviceId = deviceId;
   prevDuties.clear();
-}
-
-type ActivityCallback = (message: string, details: string) => void;
-let onActivity: ActivityCallback | null = null;
-
-export function setActivityCallback(cb: ActivityCallback | null): void {
-  onActivity = cb;
 }
 
 function handleSample(sample: FanSample): void {
@@ -34,7 +28,7 @@ function handleSample(sample: FanSample): void {
 
       // Push to ActivityStore (so LogsPage updates in realtime)
       useActivityStore.getState().push({
-        id: Date.now(), // temporary ID for in-memory entry
+        id: genId(), // temporary ID for in-memory entry
         device_id: activeDeviceId,
         event_type: "fan",
         message: msg,
@@ -42,9 +36,6 @@ function handleSample(sample: FanSample): void {
         ts: new Date().toISOString(),
       });
 
-      if (onActivity) {
-        onActivity(msg, details);
-      }
     }
     prevDuties.set(fan.id, fan.duty);
   }

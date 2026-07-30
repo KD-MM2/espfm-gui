@@ -1607,10 +1607,12 @@ pub async fn clear_logs(device_id: u32, state: State<'_, AppState>) -> Result<()
 }
 
 #[tauri::command]
-pub async fn run_maintenance(device_id: u32, state: State<'_, AppState>) -> Result<(), String> {
+pub async fn run_maintenance(
+    device_id: u32,
+    state: State<'_, AppState>,
+) -> Result<(usize, usize, usize, usize, usize), String> {
     espfm_store::samples::run_maintenance(&state.db.conn(), device_id as i64)
-        .map_err(|e| format!("run_maintenance failed: {e}"))?;
-    Ok(())
+        .map_err(|e| format!("run_maintenance failed: {e}"))
 }
 
 #[tauri::command]

@@ -10,15 +10,16 @@
  */
 
 import { Collector, loadHistory } from "./collectors";
-import { useChartStore, startChartStore, stopChartStore } from "../stores/chartStore";
+import { useChartStore, startChartStore, stopChartStore, clearChartBuffer } from "../stores/chartStore";
 import { useActivityStore } from "../stores/activityStore";
 import { startSqliteWriter, stopSqliteWriter, setWriterDevice } from "./sqliteWriter";
 import { startActivityDetector, stopActivityDetector, setDetectorDevice } from "./activityDetector";
-import type { TimeRange } from "./timeSeriesBuffer";
+import { RANGE_MINUTES, type TimeRange } from "./timeSeriesBuffer";
 
 let activeDeviceId: number | null = null;
 let collector: Collector | null = null;
 let initialized = false;
+let generation = 0; // incremented on each start call to detect superseded sessions
 
 /** Get the currently active monitoring device, if any. */
 export function getActiveMonitoringDevice(): number | null {
@@ -41,6 +42,7 @@ export async function startMonitoringSession(
     stopMonitoringSession();
   }
 
+  const gen = ++generation;
   activeDeviceId = deviceId;
   setWriterDevice(deviceId);
   setDetectorDevice(deviceId);
@@ -56,12 +58,22 @@ export async function startMonitoringSession(
     useActivityStore.getState().loadFromDb(deviceId),
   ]);
 
+  // If another startMonitoringSession call superseded us, abort
+  if (gen !== generation) return;
+
   // Direct restore into chart store — idempotent, no EventBus replay
   useChartStore.getState().restore(historySamples);
 
   // Phase 2: Start realtime Collector (publishes to EventBus going forward)
   collector = new Collector(deviceId);
   await collector.start();
+
+  // Final check: if superseded during collector start, stop the orphan
+  if (gen !== generation) {
+    collector.stop();
+    collector = null;
+    return;
+  }
 
   initialized = true;
 }
@@ -77,8 +89,7 @@ export function stopMonitoringSession(): void {
   stopActivityDetector();
   setWriterDevice(null);
   setDetectorDevice(null);
-  useChartStore.getState().buffer.clear();
-  useChartStore.getState().updateChart();
+  clearChartBuffer();
   useActivityStore.getState().clear();
   activeDeviceId = null;
   initialized = false;
@@ -86,13 +97,6 @@ export function stopMonitoringSession(): void {
 
 /** Change the chart time range and reload history. */
 export async function changeTimeRange(range: TimeRange): Promise<void> {
-  const RANGE_MINUTES: Record<TimeRange, number> = {
-    "30m": 30,
-    "1h": 60,
-    "6h": 360,
-    "24h": 1440,
-  };
-
   const { setTimeRange } = useChartStore.getState();
   setTimeRange(range);
 

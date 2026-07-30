@@ -180,7 +180,7 @@ export function LogsPage() {
               <button
                 type="button"
                 onClick={() => setPage((p) => p + 1)}
-                disabled={logs.length < PAGE_SIZE}
+                disabled={(page + 1) * PAGE_SIZE >= filtered.length}
                 className="flex items-center gap-1 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Next

@@ -28,7 +28,12 @@ export const useActivityStore = create<ActivityStore>((set) => ({
     set({ loading: true });
     try {
       const entries = await api.getLogs(deviceId, 1000, 0);
-      set({ entries });
+      // Merge: keep any entries pushed during the await window (newer than DB fetch)
+      set((state) => {
+        const dbTs = new Set(entries.map((e) => e.ts));
+        const concurrent = state.entries.filter((e) => !dbTs.has(e.ts));
+        return { entries: [...entries, ...concurrent] };
+      });
     } catch (e) {
       console.warn("[activityStore] loadFromDb failed:", e);
     } finally {
