@@ -28,6 +28,7 @@ export const useActivityStore = create<ActivityStore>((set) => ({
     set({ loading: true });
     try {
       const entries = await api.getLogs(deviceId, 1000, 0);
+      console.log(`[activityStore] loadFromDb: loaded ${entries.length} entries for device ${deviceId}`);
       // Merge: keep any entries pushed during the await window (newer than DB fetch)
       set((state) => {
         const dbTs = new Set(entries.map((e) => e.ts));

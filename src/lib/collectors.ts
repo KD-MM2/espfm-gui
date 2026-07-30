@@ -182,6 +182,7 @@ export async function loadHistory(
       samples.push({ timestamp: ts, fans, temperatures, system: null });
     }
 
+    console.log(`[loadHistory] loaded ${samples.length} samples for device ${deviceId} (${minutes}m)`);
     return samples.sort((a, b) => a.timestamp - b.timestamp);
   } catch (e) {
     console.warn("loadHistory failed:", e);

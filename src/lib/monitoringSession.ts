@@ -37,6 +37,7 @@ export async function startMonitoringSession(
   deviceId: number,
   timeRangeMinutes: number
 ): Promise<void> {
+  console.log(`[monitoringSession] startMonitoringSession(${deviceId}), current=${activeDeviceId}, initialized=${initialized}`);
   if (activeDeviceId === deviceId && initialized) return;
 
   // Stop previous session if switching devices
@@ -87,7 +88,7 @@ export async function startMonitoringSession(
   initialized = true;
 }
 
-/** Stop the monitoring session. Clears all subscribers and stores. */
+/** Stop the monitoring session. Clears subscribers and stores. */
 export function stopMonitoringSession(): void {
   if (collector) {
     collector.stop();
@@ -98,8 +99,8 @@ export function stopMonitoringSession(): void {
   stopActivityDetector();
   setWriterDevice(null);
   setDetectorDevice(null);
-  clearChartBuffer();
-  useActivityStore.getState().clear();
+  // Note: stores are NOT cleared here — the next startMonitoringSession
+  // will restore from SQLite and overwrite. This avoids a flash of empty UI.
   activeDeviceId = null;
   initialized = false;
 }

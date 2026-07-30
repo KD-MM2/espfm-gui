@@ -16,7 +16,9 @@ impl Database {
     /// Open (or create) a SQLite database at the given path with WAL mode and foreign keys.
     pub fn open(path: &Path) -> SqlResult<Self> {
         let conn = Connection::open(path)?;
-        conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")?;
+        // Note: foreign_keys=OFF because time-series tables use device_id as a logical
+        // identifier (in-memory connection ID), not a real FK to devices.id.
+        conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=OFF;")?;
         let db = Self {
             conn: Mutex::new(conn),
         };
@@ -27,7 +29,9 @@ impl Database {
     /// Open an in-memory database (for testing).
     pub fn open_in_memory() -> SqlResult<Self> {
         let conn = Connection::open_in_memory()?;
-        conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;")?;
+        // Note: foreign_keys=OFF because time-series tables use device_id as a logical
+        // identifier (in-memory connection ID), not a real FK to devices.id.
+        conn.execute_batch("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=OFF;")?;
         let db = Self {
             conn: Mutex::new(conn),
         };
@@ -52,9 +56,11 @@ impl Database {
             );
 
             -- Raw time-series tables
+            -- device_id is a logical identifier (in-memory connection ID), NOT a FK to devices.id.
+            -- The in-memory ID and SQLite device ID may diverge across sessions.
             CREATE TABLE IF NOT EXISTS fan_samples (
                 id       INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id INTEGER NOT NULL REFERENCES devices(id),
+                device_id INTEGER NOT NULL,
                 fan_id   INTEGER NOT NULL,
                 rpm      INTEGER NOT NULL,
                 duty     REAL NOT NULL,
@@ -63,7 +69,7 @@ impl Database {
 
             CREATE TABLE IF NOT EXISTS temp_samples (
                 id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id INTEGER NOT NULL REFERENCES devices(id),
+                device_id INTEGER NOT NULL,
                 source_id INTEGER NOT NULL,
                 temp_c    REAL NOT NULL,
                 ts        TEXT NOT NULL
@@ -71,7 +77,7 @@ impl Database {
 
             CREATE TABLE IF NOT EXISTS activity_log (
                 id         INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id  INTEGER NOT NULL REFERENCES devices(id),
+                device_id  INTEGER NOT NULL,
                 event_type TEXT NOT NULL,
                 message    TEXT,
                 details    TEXT,
@@ -86,7 +92,7 @@ impl Database {
             -- 1-minute downsampled tables
             CREATE TABLE IF NOT EXISTS fan_samples_1m (
                 id       INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id INTEGER NOT NULL REFERENCES devices(id),
+                device_id INTEGER NOT NULL,
                 fan_id   INTEGER NOT NULL,
                 rpm_avg  REAL NOT NULL,
                 rpm_min  REAL,
@@ -97,7 +103,7 @@ impl Database {
 
             CREATE TABLE IF NOT EXISTS temp_samples_1m (
                 id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id INTEGER NOT NULL REFERENCES devices(id),
+                device_id INTEGER NOT NULL,
                 source_id INTEGER NOT NULL,
                 temp_avg  REAL NOT NULL,
                 temp_min  REAL,
@@ -108,7 +114,7 @@ impl Database {
             -- 5-minute downsampled tables
             CREATE TABLE IF NOT EXISTS fan_samples_5m (
                 id       INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id INTEGER NOT NULL REFERENCES devices(id),
+                device_id INTEGER NOT NULL,
                 fan_id   INTEGER NOT NULL,
                 rpm_avg  REAL NOT NULL,
                 rpm_min  REAL,
@@ -119,7 +125,7 @@ impl Database {
 
             CREATE TABLE IF NOT EXISTS temp_samples_5m (
                 id        INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id INTEGER NOT NULL REFERENCES devices(id),
+                device_id INTEGER NOT NULL,
                 source_id INTEGER NOT NULL,
                 temp_avg  REAL NOT NULL,
                 temp_min  REAL,
