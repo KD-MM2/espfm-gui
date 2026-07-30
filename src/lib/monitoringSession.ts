@@ -10,8 +10,10 @@
  */
 
 import { Collector, loadHistory } from "./collectors";
+import { api } from "./api";
 import { useChartStore, startChartStore, stopChartStore, clearChartBuffer } from "../stores/chartStore";
 import { useActivityStore } from "../stores/activityStore";
+import { useDeviceStore } from "../stores/deviceStore";
 import { startSqliteWriter, stopSqliteWriter, setWriterDevice } from "./sqliteWriter";
 import { startActivityDetector, stopActivityDetector, setDetectorDevice } from "./activityDetector";
 import { RANGE_MINUTES, type TimeRange } from "./timeSeriesBuffer";
@@ -46,6 +48,13 @@ export async function startMonitoringSession(
   activeDeviceId = deviceId;
   setWriterDevice(deviceId);
   setDetectorDevice(deviceId);
+
+  // Ensure device exists in SQLite before starting the writer (FK constraint)
+  const device = useDeviceStore.getState().devices.find((d) => d.id === deviceId);
+  if (device) {
+    const [ip, port] = device.ipAddress.split(":");
+    await api.saveDeviceInfo(device.hostname, ip, Number(port));
+  }
 
   // Start EventBus subscribers (these persist for the session)
   startChartStore();
