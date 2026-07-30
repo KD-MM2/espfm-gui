@@ -27,17 +27,17 @@ export function ActivityLog({ entries, maxItems = 7, onShowAll, totalCount }: Ac
   const hasMore = entries.length > maxItems || total > entries.length;
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <h2 className="mb-3 text-sm font-semibold text-foreground">
+    <div className="flex min-h-0 flex-1 flex-col rounded-lg border border-border bg-card p-4">
+      <h2 className="mb-3 shrink-0 text-sm font-semibold text-foreground">
         Activity Log
       </h2>
 
       {entries.length === 0 ? (
-        <p className="py-6 text-center text-xs text-muted-foreground">
-          No activity yet
-        </p>
+        <div className="flex flex-1 items-center justify-center">
+          <p className="text-xs text-muted-foreground">No activity yet</p>
+        </div>
       ) : (
-        <div className="space-y-2.5">
+        <div className="min-h-0 flex-1 space-y-2.5 overflow-auto">
           {visibleEntries.map((entry) => (
             <div key={entry.id} className="flex items-start gap-2.5">
               <span

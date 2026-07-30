@@ -44,8 +44,8 @@ export function FanTempChart({
   const hasTemp = tempNames.length > 0;
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="mb-4 flex items-center justify-between">
+    <>
+      <div className="mb-4 flex shrink-0 items-center justify-between">
         <h2 className="text-sm font-semibold text-foreground">
           Fan RPM & Temperature
         </h2>
@@ -85,90 +85,92 @@ export function FanTempChart({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={280}>
-        <LineChart
-          data={data}
-          margin={{ top: 4, right: hasTemp ? 12 : 0, left: 0, bottom: 0 }}
-        >
-          <CartesianGrid strokeDasharray="3 3" stroke="#dcdee0" vertical={false} />
-          <XAxis
-            dataKey="time"
-            tick={{ fontSize: 11, fill: "#60646c" }}
-            tickLine={false}
-            axisLine={{ stroke: "#dcdee0" }}
-            interval="preserveStartEnd"
-          />
-          <YAxis
-            yAxisId="rpm"
-            tick={{ fontSize: 11, fill: "#60646c" }}
-            tickLine={false}
-            axisLine={false}
-            width={40}
-            label={{ value: "RPM", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: "#999" } }}
-          />
-          {hasTemp && (
+      <div className="min-h-0 flex-1">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart
+            data={data}
+            margin={{ top: 4, right: hasTemp ? 12 : 0, left: 0, bottom: 0 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#dcdee0" vertical={false} />
+            <XAxis
+              dataKey="time"
+              tick={{ fontSize: 11, fill: "#60646c" }}
+              tickLine={false}
+              axisLine={{ stroke: "#dcdee0" }}
+              interval="preserveStartEnd"
+            />
             <YAxis
-              yAxisId="temp"
-              orientation="right"
+              yAxisId="rpm"
               tick={{ fontSize: 11, fill: "#60646c" }}
               tickLine={false}
               axisLine={false}
               width={40}
-              domain={["auto", "auto"]}
-              label={{ value: "°C", angle: 90, position: "insideRight", style: { fontSize: 10, fill: "#999" } }}
+              label={{ value: "RPM", angle: -90, position: "insideLeft", style: { fontSize: 10, fill: "#999" } }}
             />
-          )}
-          <Tooltip
-            contentStyle={{
-              fontSize: 12,
-              borderRadius: 8,
-              border: "1px solid #dcdee0",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
-            }}
-            formatter={(value, name) => {
-              const num = typeof value === "number" ? value : 0;
-              if (typeof name === "string" && name.startsWith("temp_")) {
-                return [`${num.toFixed(1)} °C`, name.replace("temp_", "")];
-              }
-              return [`${num} RPM`, typeof name === "string" ? name : String(name)];
-            }}
-          />
-          <Legend
-            wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
-            iconType="plainline"
-            formatter={(value) => {
-              const str = typeof value === "string" ? value : String(value);
-              if (str.startsWith("temp_")) return str.replace("temp_", "") + " (°C)";
-              return str + " (RPM)";
-            }}
-          />
-          {fanNames.map((name, i) => (
-            <Line
-              key={name}
-              yAxisId="rpm"
-              type="monotone"
-              dataKey={name}
-              stroke={FAN_COLORS[i % FAN_COLORS.length]}
-              strokeWidth={2}
-              dot={false}
-              activeDot={{ r: 4 }}
+            {hasTemp && (
+              <YAxis
+                yAxisId="temp"
+                orientation="right"
+                tick={{ fontSize: 11, fill: "#60646c" }}
+                tickLine={false}
+                axisLine={false}
+                width={40}
+                domain={["auto", "auto"]}
+                label={{ value: "°C", angle: 90, position: "insideRight", style: { fontSize: 10, fill: "#999" } }}
+              />
+            )}
+            <Tooltip
+              contentStyle={{
+                fontSize: 12,
+                borderRadius: 8,
+                border: "1px solid #dcdee0",
+                boxShadow: "0 2px 8px rgba(0,0,0,0.08)",
+              }}
+              formatter={(value, name) => {
+                const num = typeof value === "number" ? value : 0;
+                if (typeof name === "string" && name.startsWith("temp_")) {
+                  return [`${num.toFixed(1)} °C`, name.replace("temp_", "")];
+                }
+                return [`${num} RPM`, typeof name === "string" ? name : String(name)];
+              }}
             />
-          ))}
-          {tempNames.map((name, i) => (
-            <Line
-              key={name}
-              yAxisId="temp"
-              type="monotone"
-              dataKey={name}
-              stroke={TEMP_COLORS[i % TEMP_COLORS.length]}
-              strokeWidth={2}
-              strokeDasharray="6 3"
-              dot={false}
-              activeDot={{ r: 4 }}
+            <Legend
+              wrapperStyle={{ fontSize: 12, paddingTop: 8 }}
+              iconType="plainline"
+              formatter={(value) => {
+                const str = typeof value === "string" ? value : String(value);
+                if (str.startsWith("temp_")) return str.replace("temp_", "") + " (°C)";
+                return str + " (RPM)";
+              }}
             />
-          ))}
-        </LineChart>
-      </ResponsiveContainer>
-    </div>
+            {fanNames.map((name, i) => (
+              <Line
+                key={name}
+                yAxisId="rpm"
+                type="monotone"
+                dataKey={name}
+                stroke={FAN_COLORS[i % FAN_COLORS.length]}
+                strokeWidth={2}
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            ))}
+            {tempNames.map((name, i) => (
+              <Line
+                key={name}
+                yAxisId="temp"
+                type="monotone"
+                dataKey={name}
+                stroke={TEMP_COLORS[i % TEMP_COLORS.length]}
+                strokeWidth={2}
+                strokeDasharray="6 3"
+                dot={false}
+                activeDot={{ r: 4 }}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    </>
   );
 }

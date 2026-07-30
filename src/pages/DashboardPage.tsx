@@ -203,9 +203,9 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="flex h-full flex-col p-6">
       {/* Header */}
-      <div className="mb-6">
+      <div className="mb-4 shrink-0">
         <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {activeDevice?.hostname || "Unknown"} &middot;{" "}
@@ -213,10 +213,10 @@ export function DashboardPage() {
         </p>
       </div>
 
-      {/* Content grid: 2/3 chart, 1/3 sidebar */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Chart — spans 2 columns */}
-        <div className="lg:col-span-2">
+      {/* Top section: chart + right column */}
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2.5fr)_minmax(280px,1fr)]">
+        {/* Chart — left column */}
+        <div className="flex min-h-0 flex-col rounded-lg border border-border bg-card p-4">
           {fanNames.length > 0 ? (
             <FanTempChart
               data={chartData}
@@ -228,7 +228,7 @@ export function DashboardPage() {
               onBucketSizeChange={setBucketSize}
             />
           ) : (
-            <div className="flex h-[324px] items-center justify-center rounded-lg border border-border bg-card">
+            <div className="flex flex-1 items-center justify-center">
               <p className="text-sm text-muted-foreground">
                 No fans configured — create a fan to see data
               </p>
@@ -236,8 +236,8 @@ export function DashboardPage() {
           )}
         </div>
 
-        {/* Right column: system info + activity */}
-        <div className="flex flex-col gap-4">
+        {/* Right column: system info + activity log */}
+        <div className="flex min-h-0 flex-col gap-4">
           <SystemInfoCard
             uptime={
               systemInfo ? formatUptime(systemInfo.uptime_secs) : "—"
@@ -250,17 +250,19 @@ export function DashboardPage() {
             version={systemInfo?.version || "—"}
             status={sysStatus}
           />
-          <ActivityLog
-            entries={activity}
-            maxItems={7}
-            onShowAll={() => navigate("/logs")}
-            totalCount={activity.length}
-          />
+          <div className="flex min-h-0 flex-1 flex-col">
+            <ActivityLog
+              entries={activity}
+              maxItems={7}
+              onShowAll={() => navigate("/logs")}
+              totalCount={activity.length}
+            />
+          </div>
         </div>
       </div>
 
       {/* Bottom row: sources, curves, schedules, WiFi */}
-      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 shrink-0 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Sources */}
         <div className="rounded-lg border border-border bg-card p-4">
           <h2 className="mb-3 text-sm font-semibold text-foreground">
