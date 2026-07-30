@@ -1494,7 +1494,7 @@ pub async fn save_fan_sample(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     espfm_store::samples::insert_fan_sample_direct(
-        &state.db.conn(),
+        &mut state.db.conn(),
         device_id as i64,
         slot as i32,
         rpm as i32,
@@ -1514,7 +1514,7 @@ pub async fn save_fan_samples_batch(
         .into_iter()
         .map(|(slot, rpm, duty)| (slot as i32, rpm as i32, duty as f64))
         .collect();
-    espfm_store::samples::insert_fan_samples_batch(&state.db.conn(), device_id as i64, &batch)
+    espfm_store::samples::insert_fan_samples_batch(&mut state.db.conn(), device_id as i64, &batch)
         .map_err(|e| format!("save_fan_samples_batch failed: {e}"))?;
     Ok(())
 }
@@ -1527,7 +1527,7 @@ pub async fn save_temp_sample(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     espfm_store::samples::insert_temp_sample_direct(
-        &state.db.conn(),
+        &mut state.db.conn(),
         device_id as i64,
         slot as i32,
         temp_c as f64,
@@ -1546,7 +1546,7 @@ pub async fn save_temp_samples_batch(
         .into_iter()
         .map(|(slot, temp_c)| (slot as i32, temp_c as f64))
         .collect();
-    espfm_store::samples::insert_temp_samples_batch(&state.db.conn(), device_id as i64, &batch)
+    espfm_store::samples::insert_temp_samples_batch(&mut state.db.conn(), device_id as i64, &batch)
         .map_err(|e| format!("save_temp_samples_batch failed: {e}"))?;
     Ok(())
 }
@@ -1560,7 +1560,7 @@ pub async fn save_log(
     state: State<'_, AppState>,
 ) -> Result<(), String> {
     espfm_store::samples::insert_activity_with_details(
-        &state.db.conn(),
+        &mut state.db.conn(),
         device_id as i64,
         &event_type,
         &message,
@@ -1579,7 +1579,7 @@ pub async fn get_logs(
     state: State<'_, AppState>,
 ) -> Result<Vec<ActivityLogEntry>, String> {
     let entries = espfm_store::samples::get_activity_log_filtered(
-        &state.db.conn(),
+        &mut state.db.conn(),
         device_id as i64,
         limit,
         offset,
@@ -1601,7 +1601,7 @@ pub async fn get_logs(
 
 #[tauri::command]
 pub async fn clear_logs(device_id: u32, state: State<'_, AppState>) -> Result<(), String> {
-    espfm_store::samples::clear_activity_log(&state.db.conn(), device_id as i64)
+    espfm_store::samples::clear_activity_log(&mut state.db.conn(), device_id as i64)
         .map_err(|e| format!("clear_logs failed: {e}"))?;
     Ok(())
 }
@@ -1611,7 +1611,7 @@ pub async fn run_maintenance(
     device_id: u32,
     state: State<'_, AppState>,
 ) -> Result<(usize, usize, usize, usize, usize), String> {
-    espfm_store::samples::run_maintenance(&state.db.conn(), device_id as i64)
+    espfm_store::samples::run_maintenance(&mut state.db.conn(), device_id as i64)
         .map_err(|e| format!("run_maintenance failed: {e}"))
 }
 
@@ -1621,7 +1621,7 @@ pub async fn save_app_state(
     value: String,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    espfm_store::app_state::set_app_state(&state.db.conn(), &key, &value)
+    espfm_store::app_state::set_app_state(&mut state.db.conn(), &key, &value)
         .map_err(|e| format!("save_app_state failed: {e}"))?;
     Ok(())
 }
@@ -1631,7 +1631,8 @@ pub async fn delete_app_state(
     key: String,
     state: State<'_, AppState>,
 ) -> Result<bool, String> {
-    espfm_store::app_state::delete_app_state(&state.db.conn(), &key)
+    espfm_store::app_state::delete_app_state(&mut state.db.conn(), &key)
+        .map(|n| n > 0)
         .map_err(|e| format!("delete_app_state failed: {e}"))
 }
 
@@ -1640,7 +1641,7 @@ pub async fn get_app_state(
     key: String,
     state: State<'_, AppState>,
 ) -> Result<Option<String>, String> {
-    espfm_store::app_state::get_app_state(&state.db.conn(), &key)
+    espfm_store::app_state::get_app_state(&mut state.db.conn(), &key)
         .map_err(|e| format!("get_app_state failed: {e}"))
 }
 
@@ -1651,7 +1652,7 @@ pub async fn save_device_info(
     port: u16,
     state: State<'_, AppState>,
 ) -> Result<(), String> {
-    espfm_store::samples::upsert_device(&state.db.conn(), &hostname, &ip, port as i32)
+    espfm_store::samples::upsert_device(&mut state.db.conn(), &hostname, &ip, port as i32)
         .map_err(|e| format!("save_device_info failed: {e}"))?;
     Ok(())
 }
@@ -1660,7 +1661,7 @@ pub async fn save_device_info(
 pub async fn get_saved_devices(
     state: State<'_, AppState>,
 ) -> Result<Vec<SavedDevice>, String> {
-    let devices = espfm_store::samples::get_all_devices(&state.db.conn())
+    let devices = espfm_store::samples::get_all_devices(&mut state.db.conn())
         .map_err(|e| format!("get_saved_devices failed: {e}"))?;
     Ok(devices
         .into_iter()
@@ -1689,7 +1690,7 @@ pub async fn get_recent_fan_samples(
     state: State<'_, AppState>,
 ) -> Result<Vec<FanSamplePoint>, String> {
     let samples = espfm_store::samples::get_recent_fan_samples(
-        &state.db.conn(),
+        &mut state.db.conn(),
         device_id as i64,
         minutes,
     )
@@ -1719,7 +1720,7 @@ pub async fn get_recent_temp_samples(
     state: State<'_, AppState>,
 ) -> Result<Vec<TempSamplePoint>, String> {
     let samples = espfm_store::samples::get_recent_temp_samples(
-        &state.db.conn(),
+        &mut state.db.conn(),
         device_id as i64,
         minutes,
     )

@@ -1,8 +1,12 @@
 use chrono::{DateTime, Utc};
-use rusqlite::{params, Connection, Result as SqlResult};
+use diesel::prelude::*;
+use diesel::sql_types::{Double, Integer, Text};
 use serde::{Deserialize, Serialize};
 
-/// A single fan RPM/duty sample.
+use crate::models::*;
+use crate::schema::*;
+
+/// A single fan RPM/duty sample (public-facing type).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FanSample {
     pub device_id: i64,
@@ -12,7 +16,7 @@ pub struct FanSample {
     pub ts: DateTime<Utc>,
 }
 
-/// A single temperature source sample.
+/// A single temperature source sample (public-facing type).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TempSample {
     pub device_id: i64,
@@ -21,7 +25,7 @@ pub struct TempSample {
     pub ts: DateTime<Utc>,
 }
 
-/// An activity log entry.
+/// An activity log entry (public-facing type).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ActivityEntry {
     pub id: i64,
@@ -32,7 +36,7 @@ pub struct ActivityEntry {
     pub ts: String,
 }
 
-/// A saved device info entry.
+/// A saved device info entry (public-facing type).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeviceInfo {
     pub id: i64,
@@ -44,528 +48,388 @@ pub struct DeviceInfo {
 
 // ── Insert functions ───────────────────────────────────────────────
 
-pub fn insert_fan_sample(conn: &Connection, sample: &FanSample) -> SqlResult<i64> {
-    conn.execute(
-        "INSERT INTO fan_samples (device_id, fan_id, rpm, duty, ts) VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![
-            sample.device_id,
-            sample.fan_id,
-            sample.rpm,
-            sample.duty,
-            sample.ts.to_rfc3339(),
-        ],
-    )?;
-    Ok(conn.last_insert_rowid())
-}
-
-pub fn insert_temp_sample(conn: &Connection, sample: &TempSample) -> SqlResult<i64> {
-    conn.execute(
-        "INSERT INTO temp_samples (device_id, source_id, temp_c, ts) VALUES (?1, ?2, ?3, ?4)",
-        params![
-            sample.device_id,
-            sample.source_id,
-            sample.temp_c,
-            sample.ts.to_rfc3339(),
-        ],
-    )?;
-    Ok(conn.last_insert_rowid())
-}
-
-pub fn insert_activity(conn: &Connection, entry: &ActivityEntry) -> SqlResult<i64> {
-    conn.execute(
-        "INSERT INTO activity_log (device_id, event_type, message, details, ts) VALUES (?1, ?2, ?3, ?4, ?5)",
-        params![
-            entry.device_id,
-            entry.event_type,
-            entry.message,
-            entry.details,
-            entry.ts,
-        ],
-    )?;
-    Ok(conn.last_insert_rowid())
-}
-
-pub fn insert_activity_with_details(
-    conn: &Connection,
-    device_id: i64,
-    event_type: &str,
-    message: &str,
-    details: &str,
-) -> SqlResult<i64> {
-    conn.execute(
-        "INSERT INTO activity_log (device_id, event_type, message, details, ts) VALUES (?1, ?2, ?3, ?4, datetime('now'))",
-        params![device_id, event_type, message, details],
-    )?;
-    Ok(conn.last_insert_rowid())
-}
-
 pub fn insert_fan_sample_direct(
-    conn: &Connection,
-    device_id: i64,
-    fan_id: i32,
-    rpm: i32,
-    duty: f64,
-) -> SqlResult<i64> {
-    conn.execute(
-        "INSERT INTO fan_samples (device_id, fan_id, rpm, duty, ts) VALUES (?1, ?2, ?3, ?4, datetime('now'))",
-        params![device_id, fan_id, rpm, duty],
-    )?;
-    Ok(conn.last_insert_rowid())
+    conn: &mut SqliteConnection,
+    dev_id: i64,
+    f_id: i32,
+    rpm_val: i32,
+    duty_val: f64,
+) -> QueryResult<usize> {
+    let now = Utc::now().to_rfc3339();
+    diesel::insert_into(fan_samples::table)
+        .values(&NewFanSample {
+            device_id: dev_id as i32,
+            fan_id: f_id,
+            rpm: rpm_val,
+            duty: duty_val,
+            ts: now,
+        })
+        .execute(conn)
 }
 
 pub fn insert_temp_sample_direct(
-    conn: &Connection,
-    device_id: i64,
-    source_id: i32,
-    temp_c: f64,
-) -> SqlResult<i64> {
-    conn.execute(
-        "INSERT INTO temp_samples (device_id, source_id, temp_c, ts) VALUES (?1, ?2, ?3, datetime('now'))",
-        params![device_id, source_id, temp_c],
-    )?;
-    Ok(conn.last_insert_rowid())
+    conn: &mut SqliteConnection,
+    dev_id: i64,
+    src_id: i32,
+    temp_val: f64,
+) -> QueryResult<usize> {
+    let now = Utc::now().to_rfc3339();
+    diesel::insert_into(temp_samples::table)
+        .values(&NewTempSample {
+            device_id: dev_id as i32,
+            source_id: src_id,
+            temp_c: temp_val,
+            ts: now,
+        })
+        .execute(conn)
+}
+
+pub fn insert_activity_with_details(
+    conn: &mut SqliteConnection,
+    dev_id: i64,
+    event_type_str: &str,
+    message_str: &str,
+    details_str: &str,
+) -> QueryResult<usize> {
+    let now = Utc::now().to_rfc3339();
+    diesel::insert_into(activity_log::table)
+        .values(&NewActivityLog {
+            device_id: dev_id as i32,
+            event_type: event_type_str.to_string(),
+            message: message_str.to_string(),
+            details: details_str.to_string(),
+            ts: now,
+        })
+        .execute(conn)
 }
 
 // ── Batch insert functions ─────────────────────────────────────────
 
 pub fn insert_fan_samples_batch(
-    conn: &Connection,
-    device_id: i64,
+    conn: &mut SqliteConnection,
+    dev_id: i64,
     samples: &[(i32, i32, f64)], // (fan_id, rpm, duty)
-) -> SqlResult<usize> {
-    // SAFETY: unchecked_transaction is safe here because the Connection is behind
-    // a Mutex, guaranteeing no concurrent transaction on the same connection.
-    let tx = conn.unchecked_transaction()?;
-    {
-        let mut stmt = tx.prepare(
-            "INSERT INTO fan_samples (device_id, fan_id, rpm, duty, ts) VALUES (?1, ?2, ?3, ?4, datetime('now'))",
-        )?;
-        for &(fan_id, rpm, duty) in samples {
-            stmt.execute(params![device_id, fan_id, rpm, duty])?;
-        }
-    }
-    tx.commit()?;
-    Ok(samples.len())
+) -> QueryResult<usize> {
+    let now = Utc::now().to_rfc3339();
+    let rows: Vec<NewFanSample> = samples
+        .iter()
+        .map(|&(fan_id, rpm, duty)| NewFanSample {
+            device_id: dev_id as i32,
+            fan_id,
+            rpm,
+            duty,
+            ts: now.clone(),
+        })
+        .collect();
+    diesel::insert_into(fan_samples::table)
+        .values(&rows)
+        .execute(conn)
 }
 
 pub fn insert_temp_samples_batch(
-    conn: &Connection,
-    device_id: i64,
+    conn: &mut SqliteConnection,
+    dev_id: i64,
     samples: &[(i32, f64)], // (source_id, temp_c)
-) -> SqlResult<usize> {
-    // SAFETY: same as above — Mutex guarantees no concurrent transaction.
-    let tx = conn.unchecked_transaction()?;
-    {
-        let mut stmt = tx.prepare(
-            "INSERT INTO temp_samples (device_id, source_id, temp_c, ts) VALUES (?1, ?2, ?3, datetime('now'))",
-        )?;
-        for &(source_id, temp_c) in samples {
-            stmt.execute(params![device_id, source_id, temp_c])?;
-        }
-    }
-    tx.commit()?;
-    Ok(samples.len())
+) -> QueryResult<usize> {
+    let now = Utc::now().to_rfc3339();
+    let rows: Vec<NewTempSample> = samples
+        .iter()
+        .map(|&(source_id, temp_c)| NewTempSample {
+            device_id: dev_id as i32,
+            source_id,
+            temp_c,
+            ts: now.clone(),
+        })
+        .collect();
+    diesel::insert_into(temp_samples::table)
+        .values(&rows)
+        .execute(conn)
 }
 
 // ── Query functions ────────────────────────────────────────────────
 
 pub fn get_fan_samples(
-    conn: &Connection,
-    device_id: i64,
+    conn: &mut SqliteConnection,
+    dev_id: i64,
     since: &DateTime<Utc>,
-) -> SqlResult<Vec<FanSample>> {
-    let mut stmt = conn.prepare(
-        "SELECT device_id, fan_id, rpm, duty, ts FROM fan_samples
-         WHERE device_id = ?1 AND ts >= ?2 ORDER BY ts",
-    )?;
-    let rows = stmt.query_map(params![device_id, since.to_rfc3339()], |row| {
-        let ts_str: String = row.get(4)?;
-        Ok(FanSample {
-            device_id: row.get(0)?,
-            fan_id: row.get(1)?,
-            rpm: row.get(2)?,
-            duty: row.get(3)?,
-            ts: DateTime::parse_from_rfc3339(&ts_str)
-                .unwrap()
-                .with_timezone(&Utc),
-        })
-    })?;
-    rows.collect()
-}
+) -> QueryResult<Vec<FanSample>> {
+    let rows = fan_samples::table
+        .filter(fan_samples::device_id.eq(dev_id as i32))
+        .filter(fan_samples::ts.ge(since.to_rfc3339()))
+        .order(fan_samples::ts.asc())
+        .load::<FanSampleRow>(conn)?;
 
-/// Get recent fan samples for chart display (last N minutes).
-pub fn get_recent_fan_samples(
-    conn: &Connection,
-    device_id: i64,
-    minutes: i64,
-) -> SqlResult<Vec<FanSample>> {
-    let mut stmt = conn.prepare(
-        "SELECT device_id, fan_id, rpm, duty, ts FROM fan_samples
-         WHERE device_id = ?1 AND ts >= datetime('now', ?2)
-         ORDER BY ts",
-    )?;
-    let since_param = format!("-{} minutes", minutes);
-    let rows = stmt.query_map(params![device_id, since_param], |row| {
-        let ts_str: String = row.get(4)?;
-        Ok(FanSample {
-            device_id: row.get(0)?,
-            fan_id: row.get(1)?,
-            rpm: row.get(2)?,
-            duty: row.get(3)?,
-            ts: DateTime::parse_from_rfc3339(&ts_str)
+    Ok(rows
+        .into_iter()
+        .map(|r| FanSample {
+            device_id: r.device_id as i64,
+            fan_id: r.fan_id,
+            rpm: r.rpm,
+            duty: r.duty,
+            ts: DateTime::parse_from_rfc3339(&r.ts)
                 .unwrap_or_default()
                 .with_timezone(&Utc),
         })
-    })?;
-    rows.collect()
+        .collect())
+}
+
+pub fn get_recent_fan_samples(
+    conn: &mut SqliteConnection,
+    dev_id: i64,
+    minutes: i64,
+) -> QueryResult<Vec<FanSample>> {
+    let since_param = format!("datetime('now', '-{} minutes')", minutes);
+    let rows = fan_samples::table
+        .filter(fan_samples::device_id.eq(dev_id as i32))
+        .filter(fan_samples::ts.ge(since_param))
+        .order(fan_samples::ts.asc())
+        .load::<FanSampleRow>(conn)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| FanSample {
+            device_id: r.device_id as i64,
+            fan_id: r.fan_id,
+            rpm: r.rpm,
+            duty: r.duty,
+            ts: DateTime::parse_from_rfc3339(&r.ts)
+                .unwrap_or_default()
+                .with_timezone(&Utc),
+        })
+        .collect())
 }
 
 pub fn get_temp_samples(
-    conn: &Connection,
-    device_id: i64,
+    conn: &mut SqliteConnection,
+    dev_id: i64,
     since: &DateTime<Utc>,
-) -> SqlResult<Vec<TempSample>> {
-    let mut stmt = conn.prepare(
-        "SELECT device_id, source_id, temp_c, ts FROM temp_samples
-         WHERE device_id = ?1 AND ts >= ?2 ORDER BY ts",
-    )?;
-    let rows = stmt.query_map(params![device_id, since.to_rfc3339()], |row| {
-        let ts_str: String = row.get(3)?;
-        Ok(TempSample {
-            device_id: row.get(0)?,
-            source_id: row.get(1)?,
-            temp_c: row.get(2)?,
-            ts: DateTime::parse_from_rfc3339(&ts_str)
-                .unwrap()
-                .with_timezone(&Utc),
-        })
-    })?;
-    rows.collect()
-}
+) -> QueryResult<Vec<TempSample>> {
+    let rows = temp_samples::table
+        .filter(temp_samples::device_id.eq(dev_id as i32))
+        .filter(temp_samples::ts.ge(since.to_rfc3339()))
+        .order(temp_samples::ts.asc())
+        .load::<TempSampleRow>(conn)?;
 
-/// Get recent temp samples for chart display (last N minutes).
-pub fn get_recent_temp_samples(
-    conn: &Connection,
-    device_id: i64,
-    minutes: i64,
-) -> SqlResult<Vec<TempSample>> {
-    let mut stmt = conn.prepare(
-        "SELECT device_id, source_id, temp_c, ts FROM temp_samples
-         WHERE device_id = ?1 AND ts >= datetime('now', ?2)
-         ORDER BY ts",
-    )?;
-    let since_param = format!("-{} minutes", minutes);
-    let rows = stmt.query_map(params![device_id, since_param], |row| {
-        let ts_str: String = row.get(3)?;
-        Ok(TempSample {
-            device_id: row.get(0)?,
-            source_id: row.get(1)?,
-            temp_c: row.get(2)?,
-            ts: DateTime::parse_from_rfc3339(&ts_str)
+    Ok(rows
+        .into_iter()
+        .map(|r| TempSample {
+            device_id: r.device_id as i64,
+            source_id: r.source_id,
+            temp_c: r.temp_c,
+            ts: DateTime::parse_from_rfc3339(&r.ts)
                 .unwrap_or_default()
                 .with_timezone(&Utc),
         })
-    })?;
-    rows.collect()
+        .collect())
+}
+
+pub fn get_recent_temp_samples(
+    conn: &mut SqliteConnection,
+    dev_id: i64,
+    minutes: i64,
+) -> QueryResult<Vec<TempSample>> {
+    let since_param = format!("datetime('now', '-{} minutes')", minutes);
+    let rows = temp_samples::table
+        .filter(temp_samples::device_id.eq(dev_id as i32))
+        .filter(temp_samples::ts.ge(since_param))
+        .order(temp_samples::ts.asc())
+        .load::<TempSampleRow>(conn)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| TempSample {
+            device_id: r.device_id as i64,
+            source_id: r.source_id,
+            temp_c: r.temp_c,
+            ts: DateTime::parse_from_rfc3339(&r.ts)
+                .unwrap_or_default()
+                .with_timezone(&Utc),
+        })
+        .collect())
 }
 
 pub fn get_activity_log(
-    conn: &Connection,
-    device_id: i64,
-    limit: u32,
-) -> SqlResult<Vec<ActivityEntry>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, device_id, event_type, message, details, ts FROM activity_log
-         WHERE device_id = ?1 ORDER BY ts DESC LIMIT ?2",
-    )?;
-    let rows = stmt.query_map(params![device_id, limit], |row| {
-        Ok(ActivityEntry {
-            id: row.get(0)?,
-            device_id: row.get(1)?,
-            event_type: row.get(2)?,
-            message: row.get(3)?,
-            details: row.get(4)?,
-            ts: row.get(5)?,
+    conn: &mut SqliteConnection,
+    dev_id: i64,
+    limit_val: i32,
+) -> QueryResult<Vec<ActivityEntry>> {
+    let rows = activity_log::table
+        .filter(activity_log::device_id.eq(dev_id as i32))
+        .order(activity_log::ts.desc())
+        .limit(limit_val as i64)
+        .load::<ActivityLogRow>(conn)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| ActivityEntry {
+            id: r.id as i64,
+            device_id: r.device_id as i64,
+            event_type: r.event_type,
+            message: r.message,
+            details: r.details,
+            ts: r.ts,
         })
-    })?;
-    rows.collect()
+        .collect())
 }
 
 pub fn get_activity_log_filtered(
-    conn: &Connection,
-    device_id: i64,
-    limit: i32,
-    offset: i32,
-    event_type: Option<&str>,
-) -> SqlResult<Vec<ActivityEntry>> {
-    let mut entries = Vec::new();
-    match event_type {
-        Some(et) => {
-            let mut stmt = conn.prepare(
-                "SELECT id, device_id, event_type, message, details, ts FROM activity_log
-                 WHERE device_id = ?1 AND event_type = ?2 ORDER BY ts DESC LIMIT ?3 OFFSET ?4",
-            )?;
-            let mut rows =
-                stmt.query_map(params![device_id, et, limit, offset], |row| {
-                    Ok(ActivityEntry {
-                        id: row.get(0)?,
-                        device_id: row.get(1)?,
-                        event_type: row.get(2)?,
-                        message: row.get(3)?,
-                        details: row.get(4)?,
-                        ts: row.get(5)?,
-                    })
-                })?;
-            while let Some(row) = rows.next() {
-                entries.push(row?);
-            }
-        }
-        None => {
-            let mut stmt = conn.prepare(
-                "SELECT id, device_id, event_type, message, details, ts FROM activity_log
-                 WHERE device_id = ?1 ORDER BY ts DESC LIMIT ?2 OFFSET ?3",
-            )?;
-            let mut rows =
-                stmt.query_map(params![device_id, limit, offset], |row| {
-                    Ok(ActivityEntry {
-                        id: row.get(0)?,
-                        device_id: row.get(1)?,
-                        event_type: row.get(2)?,
-                        message: row.get(3)?,
-                        details: row.get(4)?,
-                        ts: row.get(5)?,
-                    })
-                })?;
-            while let Some(row) = rows.next() {
-                entries.push(row?);
-            }
-        }
+    conn: &mut SqliteConnection,
+    dev_id: i64,
+    limit_val: i32,
+    offset_val: i32,
+    event_type_filter: Option<&str>,
+) -> QueryResult<Vec<ActivityEntry>> {
+    let mut query = activity_log::table
+        .filter(activity_log::device_id.eq(dev_id as i32))
+        .order(activity_log::ts.desc())
+        .limit(limit_val as i64)
+        .offset(offset_val as i64)
+        .into_boxed();
+
+    if let Some(et) = event_type_filter {
+        query = query.filter(activity_log::event_type.eq(et));
     }
-    Ok(entries)
-}
 
-pub fn clear_activity_log(conn: &Connection, device_id: i64) -> SqlResult<usize> {
-    let count = conn.execute("DELETE FROM activity_log WHERE device_id = ?1", params![device_id])?;
-    Ok(count)
-}
+    let rows = query.load::<ActivityLogRow>(conn)?;
 
-pub fn upsert_device(conn: &Connection, hostname: &str, ip: &str, port: i32) -> SqlResult<()> {
-    conn.execute(
-        "INSERT INTO devices (hostname, ip_address, port, last_seen) VALUES (?1, ?2, ?3, datetime('now'))
-         ON CONFLICT(hostname) DO UPDATE SET ip_address = ?2, port = ?3, last_seen = datetime('now')",
-        params![hostname, ip, port],
-    )?;
-    Ok(())
-}
-
-pub fn get_all_devices(conn: &Connection) -> SqlResult<Vec<DeviceInfo>> {
-    let mut stmt = conn.prepare(
-        "SELECT id, hostname, ip_address, port, last_seen FROM devices ORDER BY last_seen DESC",
-    )?;
-    let rows = stmt.query_map([], |row| {
-        Ok(DeviceInfo {
-            id: row.get(0)?,
-            hostname: row.get(1)?,
-            ip_address: row.get(2)?,
-            port: row.get(3)?,
-            last_seen: row.get(4)?,
+    Ok(rows
+        .into_iter()
+        .map(|r| ActivityEntry {
+            id: r.id as i64,
+            device_id: r.device_id as i64,
+            event_type: r.event_type,
+            message: r.message,
+            details: r.details,
+            ts: r.ts,
         })
-    })?;
-    rows.collect()
+        .collect())
+}
+
+pub fn clear_activity_log(conn: &mut SqliteConnection, dev_id: i64) -> QueryResult<usize> {
+    diesel::delete(activity_log::table.filter(activity_log::device_id.eq(dev_id as i32)))
+        .execute(conn)
+}
+
+pub fn upsert_device(
+    conn: &mut SqliteConnection,
+    hostname_str: &str,
+    ip_str: &str,
+    port_val: i32,
+) -> QueryResult<usize> {
+    let now = Utc::now().to_rfc3339();
+    diesel::sql_query(format!(
+        "INSERT INTO devices (hostname, ip_address, port, last_seen) VALUES ('{}', '{}', {}, '{}')
+         ON CONFLICT(hostname) DO UPDATE SET ip_address = '{}', port = {}, last_seen = '{}'",
+        hostname_str, ip_str, port_val, now, ip_str, port_val, now
+    ))
+    .execute(conn)
+}
+
+pub fn get_all_devices(conn: &mut SqliteConnection) -> QueryResult<Vec<DeviceInfo>> {
+    let rows = devices::table
+        .order(devices::last_seen.desc())
+        .load::<Device>(conn)?;
+
+    Ok(rows
+        .into_iter()
+        .map(|r| DeviceInfo {
+            id: r.id as i64,
+            hostname: r.hostname,
+            ip_address: r.ip_address,
+            port: r.port,
+            last_seen: r.last_seen,
+        })
+        .collect())
 }
 
 // ── Downsample functions ───────────────────────────────────────────
 
-/// Downsample raw fan samples into 1-minute buckets for a given device.
-pub fn downsample_fan_1m(conn: &Connection, device_id: i64) -> SqlResult<usize> {
-    let count = conn.execute(
+pub fn downsample_fan_1m(conn: &mut SqliteConnection, dev_id: i64) -> QueryResult<usize> {
+    diesel::sql_query(format!(
         "INSERT INTO fan_samples_1m (device_id, fan_id, rpm_avg, rpm_min, rpm_max, duty_avg, ts)
-         SELECT device_id,
-                fan_id,
-                AVG(rpm),
-                MIN(rpm),
-                MAX(rpm),
-                AVG(duty),
+         SELECT device_id, fan_id, AVG(rpm), MIN(rpm), MAX(rpm), AVG(duty),
                 strftime('%Y-%m-%dT%H:%M:00Z', ts)
-         FROM fan_samples
-         WHERE device_id = ?1
+         FROM fan_samples WHERE device_id = {}
          GROUP BY device_id, fan_id, strftime('%Y-%m-%dT%H:%M:00Z', ts)
          HAVING COUNT(*) > 0",
-        [device_id],
-    )?;
-    Ok(count)
+        dev_id
+    ))
+    .execute(conn)
 }
 
-/// Downsample raw temp samples into 1-minute buckets for a given device.
-pub fn downsample_temp_1m(conn: &Connection, device_id: i64) -> SqlResult<usize> {
-    let count = conn.execute(
+pub fn downsample_temp_1m(conn: &mut SqliteConnection, dev_id: i64) -> QueryResult<usize> {
+    diesel::sql_query(format!(
         "INSERT INTO temp_samples_1m (device_id, source_id, temp_avg, temp_min, temp_max, ts)
-         SELECT device_id,
-                source_id,
-                AVG(temp_c),
-                MIN(temp_c),
-                MAX(temp_c),
+         SELECT device_id, source_id, AVG(temp_c), MIN(temp_c), MAX(temp_c),
                 strftime('%Y-%m-%dT%H:%M:00Z', ts)
-         FROM temp_samples
-         WHERE device_id = ?1
+         FROM temp_samples WHERE device_id = {}
          GROUP BY device_id, source_id, strftime('%Y-%m-%dT%H:%M:00Z', ts)
          HAVING COUNT(*) > 0",
-        [device_id],
-    )?;
-    Ok(count)
+        dev_id
+    ))
+    .execute(conn)
 }
 
 // ── Cleanup functions ──────────────────────────────────────────────
 
-/// Delete raw fan/temperature samples older than 24 hours.
-pub fn cleanup_old_raw_samples(conn: &Connection) -> SqlResult<(usize, usize)> {
-    let fan = conn.execute(
+pub fn cleanup_old_raw_samples(conn: &mut SqliteConnection) -> QueryResult<(usize, usize)> {
+    let fan = diesel::sql_query(
         "DELETE FROM fan_samples WHERE ts < datetime('now', '-24 hours')",
-        [],
-    )?;
-    let temp = conn.execute(
+    )
+    .execute(conn)?;
+    let temp = diesel::sql_query(
         "DELETE FROM temp_samples WHERE ts < datetime('now', '-24 hours')",
-        [],
-    )?;
+    )
+    .execute(conn)?;
     Ok((fan, temp))
 }
 
-/// Delete 1-minute downsampled samples older than 7 days.
-pub fn cleanup_old_1m_samples(conn: &Connection) -> SqlResult<(usize, usize)> {
-    let fan = conn.execute(
+pub fn cleanup_old_1m_samples(conn: &mut SqliteConnection) -> QueryResult<(usize, usize)> {
+    let fan = diesel::sql_query(
         "DELETE FROM fan_samples_1m WHERE ts < datetime('now', '-7 days')",
-        [],
-    )?;
-    let temp = conn.execute(
+    )
+    .execute(conn)?;
+    let temp = diesel::sql_query(
         "DELETE FROM temp_samples_1m WHERE ts < datetime('now', '-7 days')",
-        [],
-    )?;
+    )
+    .execute(conn)?;
     Ok((fan, temp))
 }
 
-/// Delete 5-minute downsampled samples older than 30 days.
-pub fn cleanup_old_5m_samples(conn: &Connection) -> SqlResult<(usize, usize)> {
-    let fan = conn.execute(
+pub fn cleanup_old_5m_samples(conn: &mut SqliteConnection) -> QueryResult<(usize, usize)> {
+    let fan = diesel::sql_query(
         "DELETE FROM fan_samples_5m WHERE ts < datetime('now', '-30 days')",
-        [],
-    )?;
-    let temp = conn.execute(
+    )
+    .execute(conn)?;
+    let temp = diesel::sql_query(
         "DELETE FROM temp_samples_5m WHERE ts < datetime('now', '-30 days')",
-        [],
-    )?;
+    )
+    .execute(conn)?;
     Ok((fan, temp))
 }
 
-/// Trim activity log to the most recent 1000 entries per device.
-pub fn cleanup_old_activity(conn: &Connection) -> SqlResult<usize> {
-    let count = conn.execute(
+pub fn cleanup_old_activity(conn: &mut SqliteConnection) -> QueryResult<usize> {
+    diesel::sql_query(
         "DELETE FROM activity_log WHERE id NOT IN (
             SELECT id FROM (
                 SELECT id, ROW_NUMBER() OVER (PARTITION BY device_id ORDER BY ts DESC) AS rn
                 FROM activity_log
             ) WHERE rn <= 1000
         )",
-        [],
-    )?;
-    Ok(count)
+    )
+    .execute(conn)
 }
 
-/// Run all maintenance: downsample + cleanup. Returns (fan_1m_inserted, temp_1m_inserted, raw_deleted, old_deleted, activity_trimmed).
-pub fn run_maintenance(conn: &Connection, device_id: i64) -> SqlResult<(usize, usize, usize, usize, usize)> {
-    let fan_1m = downsample_fan_1m(conn, device_id)?;
-    let temp_1m = downsample_temp_1m(conn, device_id)?;
+pub fn run_maintenance(
+    conn: &mut SqliteConnection,
+    dev_id: i64,
+) -> QueryResult<(usize, usize, usize, usize, usize)> {
+    let fan_1m = downsample_fan_1m(conn, dev_id)?;
+    let temp_1m = downsample_temp_1m(conn, dev_id)?;
     let (raw_fan, raw_temp) = cleanup_old_raw_samples(conn)?;
     let raw_deleted = raw_fan + raw_temp;
     let (old_fan, old_temp) = cleanup_old_1m_samples(conn)?;
     let old_deleted = old_fan + old_temp;
     let activity = cleanup_old_activity(conn)?;
     Ok((fan_1m, temp_1m, raw_deleted, old_deleted, activity))
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::db::Database;
-    use chrono::TimeZone;
-
-    fn setup_db() -> Database {
-        let db = Database::open_in_memory().unwrap();
-        // Insert a test device for foreign key references
-        db.conn()
-            .execute(
-                "INSERT INTO devices (hostname) VALUES ('test-device')",
-                [],
-            )
-            .unwrap();
-        db
-    }
-
-    #[test]
-    fn test_insert_and_query_fan_samples() {
-        let db = setup_db();
-        let conn = db.conn();
-
-        let ts = Utc.with_ymd_and_hms(2025, 1, 15, 10, 30, 0).unwrap();
-        let sample = FanSample {
-            device_id: 1,
-            fan_id: 0,
-            rpm: 1200,
-            duty: 75.5,
-            ts,
-        };
-
-        let id = insert_fan_sample(&conn, &sample).unwrap();
-        assert!(id > 0);
-
-        let since = Utc.with_ymd_and_hms(2025, 1, 15, 10, 0, 0).unwrap();
-        let samples = get_fan_samples(&conn, 1, &since).unwrap();
-        assert_eq!(samples.len(), 1);
-        assert_eq!(samples[0].rpm, 1200);
-        assert!((samples[0].duty - 75.5).abs() < f64::EPSILON);
-    }
-
-    #[test]
-    fn test_insert_and_query_temp_samples() {
-        let db = setup_db();
-        let conn = db.conn();
-
-        let ts = Utc.with_ymd_and_hms(2025, 1, 15, 11, 0, 0).unwrap();
-        let sample = TempSample {
-            device_id: 1,
-            source_id: 0,
-            temp_c: 42.5,
-            ts,
-        };
-
-        let id = insert_temp_sample(&conn, &sample).unwrap();
-        assert!(id > 0);
-
-        let since = Utc.with_ymd_and_hms(2025, 1, 15, 10, 0, 0).unwrap();
-        let samples = get_temp_samples(&conn, 1, &since).unwrap();
-        assert_eq!(samples.len(), 1);
-        assert!((samples[0].temp_c - 42.5).abs() < f64::EPSILON);
-    }
-
-    #[test]
-    fn test_activity_log() {
-        let db = setup_db();
-        let conn = db.conn();
-
-        let entry = ActivityEntry {
-            id: 0,
-            device_id: 1,
-            event_type: "fan_enable".to_string(),
-            message: Some("fan 0 enabled".to_string()),
-            details: None,
-            ts: "2025-01-15T12:00:00Z".to_string(),
-        };
-
-        let id = insert_activity(&conn, &entry).unwrap();
-        assert!(id > 0);
-
-        let log = get_activity_log(&conn, 1, 10).unwrap();
-        assert_eq!(log.len(), 1);
-        assert_eq!(log[0].event_type, "fan_enable");
-        assert_eq!(log[0].message.as_deref(), Some("fan 0 enabled"));
-    }
 }

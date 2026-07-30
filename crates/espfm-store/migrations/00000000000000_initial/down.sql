@@ -1,0 +1,1 @@
+-- Diesel migration down (not used for embedded app)
