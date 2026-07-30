@@ -30,7 +30,7 @@ function FanCard({
   onToggle: (fan: FanState) => void;
 }) {
   return (
-    <Card className={!fan.enabled ? "opacity-60" : ""}>
+    <Card className={`py-0 rounded-lg gap-0 ${!fan.enabled ? "opacity-60" : ""}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
