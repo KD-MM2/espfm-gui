@@ -48,6 +48,7 @@ export function useAutoConnect(): void {
               });
               setActiveDevice(result.id);
               setConnectionStatus("connected");
+              api.saveDeviceInfo(result.hostname, result.ip, result.port).catch(() => {});
             } catch {
               // Stay disconnected
             }
@@ -74,6 +75,7 @@ export function useAutoConnect(): void {
           });
           setActiveDevice(result.id);
           setConnectionStatus("connected");
+          api.saveDeviceInfo(result.hostname, result.ip, result.port).catch(() => {});
         } catch {
           if (cancelled) return;
           addDevice({
