@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Monitor,
   Search,
@@ -32,71 +32,6 @@ export function DevicesPage() {
   const [scanning, setScanning] = useState(false);
   const [manualAddr, setManualAddr] = useState("");
   const [connecting, setConnecting] = useState(false);
-
-  // Auto-connect to last active device on startup (once only)
-  useEffect(() => {
-    async function restoreDevice() {
-      try {
-        const lastDeviceJson = await api.getAppState("last_active_device");
-        if (!lastDeviceJson) return;
-        const saved = JSON.parse(lastDeviceJson) as {
-          hostname: string;
-          ip: string;
-          port: number;
-        };
-        if (!saved.ip) return;
-        const addr = `${saved.ip}:${saved.port}`;
-
-        // Check if device already exists in store (avoid duplicates)
-        const existing = useDeviceStore.getState().devices.find(
-          (d) => d.ipAddress === addr
-        );
-        if (existing) {
-          if (!existing.connected) {
-            // Try to reconnect existing device
-            try {
-              await api.connectDevice(addr);
-              useDeviceStore.getState().devices.forEach((d) => {
-                if (d.ipAddress === addr) {
-                  // Update connected status via store
-                }
-              });
-            } catch {
-              // Stay disconnected
-            }
-          }
-          return;
-        }
-
-        try {
-          const result = (await api.connectDevice(addr)) as {
-            id: number;
-            hostname: string;
-            ip: string;
-            port: number;
-          };
-          addDevice({
-            id: result.id,
-            hostname: result.hostname,
-            ipAddress: `${result.ip}:${result.port}`,
-            connected: true,
-          });
-          setActiveDevice(result.id);
-          setConnectionStatus("connected");
-        } catch {
-          addDevice({
-            id: Date.now(),
-            hostname: saved.hostname,
-            ipAddress: addr,
-            connected: false,
-          });
-        }
-      } catch {
-        // No saved state — first launch
-      }
-    }
-    restoreDevice();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleScan() {
     setScanning(true);
