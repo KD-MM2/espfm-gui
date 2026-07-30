@@ -171,7 +171,7 @@ export function FanForm({
             <div>
               <Label>Operation Mode</Label>
               <Select value={mode} onValueChange={setMode}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="w-full mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -199,7 +199,7 @@ export function FanForm({
             <div>
               <Label>Temperature Source</Label>
               <Select value={sourceId} onValueChange={setSourceId}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="w-full mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -215,7 +215,7 @@ export function FanForm({
             <div>
               <Label>Fan Curve</Label>
               <Select value={curveId} onValueChange={setCurveId}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="w-full mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -235,7 +235,7 @@ export function FanForm({
             <div>
               <Label>Schedule</Label>
               <Select value={scheduleId} onValueChange={setScheduleId}>
-                <SelectTrigger className="mt-1">
+                <SelectTrigger className="w-full mt-1">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
