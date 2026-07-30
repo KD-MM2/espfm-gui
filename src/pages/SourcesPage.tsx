@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, ScanLine } from "lucide-react";
 import { api, type SourceState, type Ds18b20Device } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
@@ -17,14 +17,21 @@ export function SourcesPage() {
   const [showForm, setShowForm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [editingSource, setEditingSource] = useState<SourceState | null>(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const fetchSources = useCallback(async () => {
     if (activeDeviceId == null) return;
     try {
       const data = await api.getSources(activeDeviceId);
-      setSources(data);
-    } catch (err) {
-      showToast(`Failed to load sources: ${String(err)}`, "error");
+      if (isMounted.current) setSources(data);
+    } catch {
+      // Ignore errors after unmount
     }
   }, [activeDeviceId]);
 

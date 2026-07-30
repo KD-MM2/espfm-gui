@@ -7,11 +7,17 @@
   --color-card-foreground: #171717;
   --color-primary: #171717;
   --color-primary-foreground: #ffffff;
+  --color-secondary: #f0f0f3;
+  --color-secondary-foreground: #171717;
   --color-muted: #f0f0f3;
   --color-muted-foreground: #60646c;
   --color-border: #dcdee0;
+  --color-input: #dcdee0;
+  --color-ring: #171717;
   --color-accent: #f0f0f3;
   --color-accent-foreground: #171717;
+  --color-popover: #ffffff;
+  --color-popover-foreground: #171717;
   --color-destructive: #dc2626;
   --color-success: #16a34a;
   --color-warning: #ab6400;
