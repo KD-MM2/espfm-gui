@@ -72,6 +72,7 @@ export function SystemPage() {
     try {
       await api.setHostname(activeDeviceId, hostname.trim());
       showToast("Hostname set", "success");
+      api.saveLog(activeDeviceId, "system", `Hostname set to "${hostname.trim()}"`, "").catch(() => {});
       await fetchInfo();
     } catch (e) {
       showToast(`Failed to set hostname: ${String(e)}`, "error");
@@ -86,6 +87,7 @@ export function SystemPage() {
     try {
       await api.rebootDevice(activeDeviceId);
       showToast("Device rebooting...", "success");
+      api.saveLog(activeDeviceId, "system", "Device reboot initiated", "").catch(() => {});
       setShowRebootDialog(false);
     } catch (e) {
       showToast(`Failed to reboot device: ${String(e)}`, "error");

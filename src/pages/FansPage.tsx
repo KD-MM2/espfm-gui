@@ -73,6 +73,7 @@ export function FansPage() {
       }
       setFans((prev) => [...prev, final]);
       showToast("Fan created", "success");
+      api.saveLog(activeDeviceId, "fan", `Fan "${final.name}" created`, `slot=${final.slot}`).catch(() => {});
       closeForm();
     } catch (err) {
       showToast(`Failed to create fan: ${String(err)}`, "error");
@@ -99,6 +100,7 @@ export function FansPage() {
         prev.map((f) => (f.slot === updated.slot ? updated : f))
       );
       showToast("Fan updated", "success");
+      api.saveLog(activeDeviceId, "fan", `Fan "${updated.name}" updated`, `slot=${updated.slot}`).catch(() => {});
       closeForm();
     } catch (err) {
       showToast(`Failed to update fan: ${String(err)}`, "error");
@@ -115,6 +117,7 @@ export function FansPage() {
         prev.map((f) => (f.slot === updated.slot ? updated : f))
       );
       showToast(fan.enabled ? "Fan disabled" : "Fan enabled", "success");
+      api.saveLog(activeDeviceId, "fan", `Fan "${fan.name}" ${!fan.enabled ? "enabled" : "disabled"}`, `slot=${fan.slot}`).catch(() => {});
     } catch (err) {
       showToast(`Failed to toggle fan: ${String(err)}`, "error");
     }
@@ -127,6 +130,7 @@ export function FansPage() {
       await api.deleteFan(activeDeviceId, fan.slot);
       setFans((prev) => prev.filter((f) => f.slot !== fan.slot));
       showToast("Fan deleted", "success");
+      api.saveLog(activeDeviceId, "fan", `Fan "${fan.name}" deleted`, `slot=${fan.slot}`).catch(() => {});
     } catch (err) {
       showToast(`Failed to delete fan: ${String(err)}`, "error");
     }

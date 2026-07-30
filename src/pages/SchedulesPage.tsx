@@ -55,6 +55,7 @@ export function SchedulesPage() {
       const created = await api.createSchedule(activeDeviceId, data);
       setSchedules((prev) => [...prev, created]);
       showToast("Schedule created", "success");
+      api.saveLog(activeDeviceId, "schedule", `Schedule created (fan ${data.fan_id}, ${data.duty}%)`, `slot=${created.slot}`).catch(() => {});
       closeForm();
     } catch (err) {
       showToast(`Failed to create schedule: ${String(err)}`, "error");
@@ -85,6 +86,7 @@ export function SchedulesPage() {
         prev.map((s) => (s.slot === updated.slot ? updated : s))
       );
       showToast("Schedule updated", "success");
+      api.saveLog(activeDeviceId, "schedule", `Schedule updated (fan ${data.fan_id}, ${data.duty}%)`, `slot=${updated.slot}`).catch(() => {});
       closeForm();
     } catch (err) {
       showToast(`Failed to update schedule: ${String(err)}`, "error");
@@ -98,6 +100,7 @@ export function SchedulesPage() {
       await api.deleteSchedule(activeDeviceId, schedule.slot);
       setSchedules((prev) => prev.filter((s) => s.slot !== schedule.slot));
       showToast("Schedule deleted", "success");
+      api.saveLog(activeDeviceId, "schedule", `Schedule deleted (fan ${schedule.fan_id})`, `slot=${schedule.slot}`).catch(() => {});
     } catch (err) {
       showToast(`Failed to delete schedule: ${String(err)}`, "error");
     }
@@ -115,6 +118,7 @@ export function SchedulesPage() {
         prev.map((s) => (s.slot === updated.slot ? updated : s))
       );
       showToast(schedule.enabled ? "Schedule disabled" : "Schedule enabled", "success");
+      api.saveLog(activeDeviceId, "schedule", `Schedule ${!schedule.enabled ? "enabled" : "disabled"} (fan ${schedule.fan_id})`, `slot=${schedule.slot}`).catch(() => {});
     } catch (err) {
       showToast(`Failed to toggle schedule: ${String(err)}`, "error");
     }

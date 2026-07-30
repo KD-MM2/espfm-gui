@@ -46,6 +46,7 @@ export function WifiPage() {
     setConnecting(true);
     try {
       await api.wifiConnect(activeDeviceId, ssid.trim(), password);
+      api.saveLog(activeDeviceId, "system", `WiFi connect to "${ssid.trim()}"`, "").catch(() => {});
       // Refresh status after connect attempt
       await fetchStatus();
       setSsid("");
