@@ -126,6 +126,44 @@ pub fn insert_temp_sample_direct(
     Ok(conn.last_insert_rowid())
 }
 
+// ── Batch insert functions ─────────────────────────────────────────
+
+pub fn insert_fan_samples_batch(
+    conn: &Connection,
+    device_id: i64,
+    samples: &[(i32, i32, f64)], // (fan_id, rpm, duty)
+) -> SqlResult<usize> {
+    let tx = conn.unchecked_transaction()?;
+    {
+        let mut stmt = tx.prepare(
+            "INSERT INTO fan_samples (device_id, fan_id, rpm, duty, ts) VALUES (?1, ?2, ?3, ?4, datetime('now'))",
+        )?;
+        for &(fan_id, rpm, duty) in samples {
+            stmt.execute(params![device_id, fan_id, rpm, duty])?;
+        }
+    }
+    tx.commit()?;
+    Ok(samples.len())
+}
+
+pub fn insert_temp_samples_batch(
+    conn: &Connection,
+    device_id: i64,
+    samples: &[(i32, f64)], // (source_id, temp_c)
+) -> SqlResult<usize> {
+    let tx = conn.unchecked_transaction()?;
+    {
+        let mut stmt = tx.prepare(
+            "INSERT INTO temp_samples (device_id, source_id, temp_c, ts) VALUES (?1, ?2, ?3, datetime('now'))",
+        )?;
+        for &(source_id, temp_c) in samples {
+            stmt.execute(params![device_id, source_id, temp_c])?;
+        }
+    }
+    tx.commit()?;
+    Ok(samples.len())
+}
+
 // ── Query functions ────────────────────────────────────────────────
 
 pub fn get_fan_samples(
@@ -419,11 +457,26 @@ pub fn cleanup_old_5m_samples(conn: &Connection) -> SqlResult<(usize, usize)> {
 pub fn cleanup_old_activity(conn: &Connection) -> SqlResult<usize> {
     let count = conn.execute(
         "DELETE FROM activity_log WHERE id NOT IN (
-            SELECT id FROM activity_log ORDER BY ts DESC LIMIT 1000
+            SELECT id FROM (
+                SELECT id, ROW_NUMBER() OVER (PARTITION BY device_id ORDER BY ts DESC) AS rn
+                FROM activity_log
+            ) WHERE rn <= 1000
         )",
         [],
     )?;
     Ok(count)
+}
+
+/// Run all maintenance: downsample + cleanup. Returns (fan_1m_inserted, temp_1m_inserted, raw_deleted, old_deleted, activity_trimmed).
+pub fn run_maintenance(conn: &Connection, device_id: i64) -> SqlResult<(usize, usize, usize, usize, usize)> {
+    let fan_1m = downsample_fan_1m(conn, device_id)?;
+    let temp_1m = downsample_temp_1m(conn, device_id)?;
+    let (raw_fan, raw_temp) = cleanup_old_raw_samples(conn)?;
+    let raw_deleted = raw_fan + raw_temp;
+    let (old_fan, old_temp) = cleanup_old_1m_samples(conn)?;
+    let old_deleted = old_fan + old_temp;
+    let activity = cleanup_old_activity(conn)?;
+    Ok((fan_1m, temp_1m, raw_deleted, old_deleted, activity))
 }
 
 #[cfg(test)]

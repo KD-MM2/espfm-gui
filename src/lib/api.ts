@@ -194,8 +194,12 @@ export const api = {
     invoke<WifiStatus>("wifi_status", { deviceId }),
   saveFanSample: (deviceId: number, slot: number, rpm: number, duty: number) =>
     invoke("save_fan_sample", { deviceId, slot, rpm, duty }),
+  saveFanSamplesBatch: (deviceId: number, samples: [number, number, number][]) =>
+    invoke("save_fan_samples_batch", { deviceId, samples }),
   saveTempSample: (deviceId: number, slot: number, tempC: number) =>
     invoke("save_temp_sample", { deviceId, slot, tempC }),
+  saveTempSamplesBatch: (deviceId: number, samples: [number, number][]) =>
+    invoke("save_temp_samples_batch", { deviceId, samples }),
   saveLog: (
     deviceId: number,
     eventType: string,
@@ -205,6 +209,7 @@ export const api = {
   getLogs: (deviceId: number, limit: number, offset: number, eventType?: string) =>
     invoke<ActivityLogEntry[]>("get_logs", { deviceId, limit, offset, eventType }),
   clearLogs: (deviceId: number) => invoke("clear_logs", { deviceId }),
+  runMaintenance: (deviceId: number) => invoke("run_maintenance", { deviceId }),
   saveAppState: (key: string, value: string) =>
     invoke("save_app_state", { key, value }),
   deleteAppState: (key: string) =>

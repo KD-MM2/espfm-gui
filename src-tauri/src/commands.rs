@@ -1505,6 +1505,21 @@ pub async fn save_fan_sample(
 }
 
 #[tauri::command]
+pub async fn save_fan_samples_batch(
+    device_id: u32,
+    samples: Vec<(u8, u32, f32)>, // [(slot, rpm, duty)]
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let batch: Vec<(i32, i32, f64)> = samples
+        .into_iter()
+        .map(|(slot, rpm, duty)| (slot as i32, rpm as i32, duty as f64))
+        .collect();
+    espfm_store::samples::insert_fan_samples_batch(&state.db.conn(), device_id as i64, &batch)
+        .map_err(|e| format!("save_fan_samples_batch failed: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
 pub async fn save_temp_sample(
     device_id: u32,
     slot: u8,
@@ -1518,6 +1533,21 @@ pub async fn save_temp_sample(
         temp_c as f64,
     )
     .map_err(|e| format!("save_temp_sample failed: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn save_temp_samples_batch(
+    device_id: u32,
+    samples: Vec<(u8, f32)>, // [(slot, temp_c)]
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let batch: Vec<(i32, f64)> = samples
+        .into_iter()
+        .map(|(slot, temp_c)| (slot as i32, temp_c as f64))
+        .collect();
+    espfm_store::samples::insert_temp_samples_batch(&state.db.conn(), device_id as i64, &batch)
+        .map_err(|e| format!("save_temp_samples_batch failed: {e}"))?;
     Ok(())
 }
 
@@ -1573,6 +1603,13 @@ pub async fn get_logs(
 pub async fn clear_logs(device_id: u32, state: State<'_, AppState>) -> Result<(), String> {
     espfm_store::samples::clear_activity_log(&state.db.conn(), device_id as i64)
         .map_err(|e| format!("clear_logs failed: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+pub async fn run_maintenance(device_id: u32, state: State<'_, AppState>) -> Result<(), String> {
+    espfm_store::samples::run_maintenance(&state.db.conn(), device_id as i64)
+        .map_err(|e| format!("run_maintenance failed: {e}"))?;
     Ok(())
 }
 

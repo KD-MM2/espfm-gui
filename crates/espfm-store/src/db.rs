@@ -83,13 +83,6 @@ impl Database {
                 value TEXT NOT NULL
             );
 
-            CREATE TABLE IF NOT EXISTS config_snapshots (
-                id          INTEGER PRIMARY KEY AUTOINCREMENT,
-                device_id   INTEGER NOT NULL REFERENCES devices(id),
-                config_json TEXT NOT NULL,
-                ts          TEXT NOT NULL
-            );
-
             -- 1-minute downsampled tables
             CREATE TABLE IF NOT EXISTS fan_samples_1m (
                 id       INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -141,14 +134,14 @@ impl Database {
                 ON temp_samples(device_id, ts);
             CREATE INDEX IF NOT EXISTS idx_activity_log_device_ts
                 ON activity_log(device_id, ts);
-            CREATE INDEX IF NOT EXISTS idx_config_snapshots_device_ts
-                ON config_snapshots(device_id, ts);
             CREATE INDEX IF NOT EXISTS idx_fan_samples_1m_device_ts
                 ON fan_samples_1m(device_id, ts);
             CREATE INDEX IF NOT EXISTS idx_temp_samples_1m_device_ts
                 ON temp_samples_1m(device_id, ts);
             CREATE INDEX IF NOT EXISTS idx_fan_samples_5m_device_ts
                 ON fan_samples_5m(device_id, ts);
+            CREATE INDEX IF NOT EXISTS idx_temp_samples_5m_device_ts
+                ON temp_samples_5m(device_id, ts);
             ",
         )?;
         Ok(())
@@ -182,7 +175,6 @@ mod tests {
             "temp_samples",
             "activity_log",
             "app_state",
-            "config_snapshots",
             "fan_samples_1m",
             "temp_samples_1m",
             "fan_samples_5m",

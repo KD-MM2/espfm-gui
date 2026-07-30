@@ -26,7 +26,9 @@ function handleSample(sample: FanSample): void {
       const msg = `${fan.name} duty → ${fan.duty.toFixed(0)}%`;
       const details = `slot=${fan.id}, old=${prev}%, new=${fan.duty}%`;
 
-      api.saveLog(activeDeviceId, "fan", msg, details).catch(() => {});
+      api.saveLog(activeDeviceId, "fan", msg, details).catch((e) =>
+        console.warn("[activityDetector] saveLog failed:", e)
+      );
 
       if (onActivity) {
         onActivity(msg, details);
