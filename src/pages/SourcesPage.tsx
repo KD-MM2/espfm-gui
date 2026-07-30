@@ -3,6 +3,7 @@ import { Plus, ScanLine } from "lucide-react";
 import { api, type SourceState, type Ds18b20Device } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { SourceList } from "../components/sources/SourceList";
 import { SourceForm } from "../components/sources/SourceForm";
 import { Ds18b20Scanner } from "../components/sources/Ds18b20Scanner";
@@ -174,23 +175,20 @@ export function SourcesPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setShowScanner(true)}
-            className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-          >
+          <Button variant="outline" onClick={() => setShowScanner(true)}>
             <ScanLine size={16} />
             Scan DS18B20
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
+          </Button>
+          <Button
+            onClick={() => {
+              setEditingSource(null);
+              setShowForm(true);
+            }}
             disabled={sources.length >= MAX_SOURCE_SLOTS}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <Plus size={16} />
             Create Source
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -203,14 +201,15 @@ export function SourcesPage() {
         onSetManualTemp={handleSetManualTemp}
       />
 
-      {/* Form modal */}
-      {showForm && (
-        <SourceForm
-          onSubmit={handleFormSubmit}
-          onCancel={closeForm}
-          initialData={editingSource}
-        />
-      )}
+      {/* Form dialog */}
+      <SourceForm
+        open={showForm}
+        onOpenChange={(open) => {
+          if (!open) closeForm();
+        }}
+        onSubmit={handleFormSubmit}
+        initialData={editingSource}
+      />
 
       {/* Scanner modal */}
       {showScanner && activeDeviceId != null && (

@@ -1,22 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { SourceState } from "../../lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const SOURCE_TYPE_OPTIONS = ["DS18B20", "Manual", "NTC"] as const;
 
 interface SourceFormProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onSubmit: (data: {
     name: string;
     source_type: string;
     gpio?: number;
     rom_code?: string;
   }) => void;
-  onCancel: () => void;
   initialData?: SourceState | null;
 }
 
 export function SourceForm({
+  open,
+  onOpenChange,
   onSubmit,
-  onCancel,
   initialData,
 }: SourceFormProps) {
   const [name, setName] = useState(initialData?.name ?? "");
@@ -31,6 +50,16 @@ export function SourceForm({
   const isEdit = initialData != null;
   const showGpio = sourceType === "NTC";
   const showRomCode = sourceType === "DS18B20";
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setName(initialData?.name ?? "");
+      setSourceType(initialData?.source_type ?? SOURCE_TYPE_OPTIONS[0]);
+      setGpio(initialData?.gpio != null && initialData.gpio < 255 ? String(initialData.gpio) : "");
+      setRomCode(initialData?.rom_code ?? "");
+    }
+  }, [open, initialData]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -54,77 +83,55 @@ export function SourceForm({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onCancel}
-    >
-      <div
-        className="w-full max-w-md rounded-lg border border-border bg-card p-5 shadow-lg"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-base font-semibold text-foreground">
-          {isEdit ? "Edit Source" : "Create Source"}
-        </h2>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "Edit Source" : "Create Source"}</DialogTitle>
+        </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Name */}
           <div>
-            <label
-              htmlFor="source-name"
-              className="mb-1 block text-xs font-medium text-muted-foreground"
-            >
-              Name
-            </label>
-            <input
+            <Label htmlFor="source-name">Name</Label>
+            <Input
               id="source-name"
-              type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. CPU Temp"
-              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
               required
               autoFocus
+              className="mt-1"
             />
           </div>
 
           {/* Type */}
           <div>
-            <label
-              htmlFor="source-type"
-              className="mb-1 block text-xs font-medium text-muted-foreground"
-            >
-              Type
-            </label>
-            <select
-              id="source-type"
-              value={sourceType}
-              onChange={(e) => setSourceType(e.target.value)}
-              className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
-            >
-              {SOURCE_TYPE_OPTIONS.map((t) => (
-                <option key={t} value={t}>
-                  {t}
-                </option>
-              ))}
-            </select>
+            <Label>Type</Label>
+            <Select value={sourceType} onValueChange={setSourceType}>
+              <SelectTrigger className="mt-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {SOURCE_TYPE_OPTIONS.map((t) => (
+                  <SelectItem key={t} value={t}>
+                    {t}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* GPIO (NTC) */}
           {showGpio && (
             <div>
-              <label
-                htmlFor="source-gpio"
-                className="mb-1 block text-xs font-medium text-muted-foreground"
-              >
-                GPIO
-              </label>
-              <input
+              <Label htmlFor="source-gpio">GPIO</Label>
+              <Input
                 id="source-gpio"
                 type="number"
                 value={gpio}
                 onChange={(e) => setGpio(e.target.value)}
                 placeholder="e.g. 4"
-                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
+                className="mt-1"
               />
             </div>
           )}
@@ -132,41 +139,28 @@ export function SourceForm({
           {/* ROM Code (DS18B20) */}
           {showRomCode && (
             <div>
-              <label
-                htmlFor="source-rom"
-                className="mb-1 block text-xs font-medium text-muted-foreground"
-              >
-                ROM Code
-              </label>
-              <input
+              <Label htmlFor="source-rom">ROM Code</Label>
+              <Input
                 id="source-rom"
-                type="text"
                 value={romCode}
                 onChange={(e) => setRomCode(e.target.value)}
                 placeholder="e.g. 28FF1234567890AB"
-                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm font-mono text-foreground outline-none transition-colors focus:border-foreground"
+                className="mt-1 font-mono"
               />
             </div>
           )}
 
-          {/* Buttons */}
-          <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
+          {/* Footer */}
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
+            </Button>
+            <Button type="submit">
               {isEdit ? "Update" : "Create"}
-            </button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
