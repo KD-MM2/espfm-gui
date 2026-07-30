@@ -103,9 +103,9 @@ export function CurvesPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="flex h-full flex-col p-6">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex shrink-0 items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-foreground">Curves</h1>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -125,8 +125,8 @@ export function CurvesPage() {
 
       {/* Curve list or editor */}
       {showEditor ? (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
+        <div className="flex min-h-0 flex-1 flex-col gap-4">
+          <div className="flex shrink-0 items-center justify-between">
             <h2 className="text-base font-semibold text-foreground">
               {editingCurve ? "Edit Curve" : "Create Curve"}
             </h2>
@@ -149,7 +149,7 @@ export function CurvesPage() {
             </div>
           </div>
 
-          <div>
+          <div className="shrink-0">
             <label
               htmlFor="curve-name"
               className="mb-1 block text-xs font-medium text-muted-foreground"
@@ -167,7 +167,9 @@ export function CurvesPage() {
             />
           </div>
 
-          <CurveEditor points={editorPoints} onChange={setEditorPoints} />
+          <div className="min-h-0 flex-1">
+            <CurveEditor points={editorPoints} onChange={setEditorPoints} />
+          </div>
         </div>
       ) : (
         <CurveList

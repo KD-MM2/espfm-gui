@@ -168,13 +168,14 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
   const dutyGridLines = [0, 20, 40, 60, 80, 100];
 
   return (
-    <div className="space-y-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       {/* SVG Graph */}
-      <div className="rounded-lg border border-border bg-card p-3">
+      <div className="min-h-60 flex-1 rounded-lg border border-border bg-card p-3">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-          className="w-full cursor-crosshair select-none"
+          className="h-full w-full cursor-crosshair select-none"
+          preserveAspectRatio="xMidYMid meet"
           onClick={handleSvgClick}
         >
           {/* Grid lines */}

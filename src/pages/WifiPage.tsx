@@ -76,9 +76,9 @@ export function WifiPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="flex h-full flex-col p-6">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex shrink-0 items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-foreground">WiFi</h1>
           <p className="mt-1 text-xs text-muted-foreground">
