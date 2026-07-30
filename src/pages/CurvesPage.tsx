@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { api, type CurveState } from "../lib/api";
+import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
 import { CurveList } from "../components/curves/CurveList";
@@ -76,7 +77,7 @@ export function CurvesPage() {
           prev.map((c) => (c.slot === updated.slot ? updated : c))
         );
         showToast("Curve updated", "success");
-        api.saveLog(activeDeviceId, "curve", `Curve "${updated.name}" updated`, `slot=${updated.slot}, points=${updated.points.length}`).catch(() => {});
+        logUserAction(activeDeviceId, "curve", `Curve "${updated.name}" updated`, `slot=${updated.slot}, points=${updated.points.length}`);
       } else {
         const created = await api.createCurve(activeDeviceId, {
           name: curveName.trim(),
@@ -84,7 +85,7 @@ export function CurvesPage() {
         });
         setCurves((prev) => [...prev, created]);
         showToast("Curve created", "success");
-        api.saveLog(activeDeviceId, "curve", `Curve "${created.name}" created`, `slot=${created.slot}, points=${created.points.length}`).catch(() => {});
+        logUserAction(activeDeviceId, "curve", `Curve "${created.name}" created`, `slot=${created.slot}, points=${created.points.length}`);
       }
       closeEditor();
     } catch (err) {
@@ -99,7 +100,7 @@ export function CurvesPage() {
       await api.deleteCurve(activeDeviceId, curve.slot);
       setCurves((prev) => prev.filter((c) => c.slot !== curve.slot));
       showToast("Curve deleted", "success");
-      api.saveLog(activeDeviceId, "curve", `Curve "${curve.name}" deleted`, `slot=${curve.slot}`).catch(() => {});
+      logUserAction(activeDeviceId, "curve", `Curve "${curve.name}" deleted`, `slot=${curve.slot}`);
     } catch (err) {
       showToast(`Failed to delete curve: ${String(err)}`, "error");
     }

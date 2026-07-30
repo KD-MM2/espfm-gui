@@ -7,6 +7,7 @@ import {
   Server,
 } from "lucide-react";
 import { api, type SystemInfo } from "../lib/api";
+import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
 
@@ -72,7 +73,7 @@ export function SystemPage() {
     try {
       await api.setHostname(activeDeviceId, hostname.trim());
       showToast("Hostname set", "success");
-      api.saveLog(activeDeviceId, "system", `Hostname set to "${hostname.trim()}"`, "").catch(() => {});
+      logUserAction(activeDeviceId, "system", `Hostname set to "${hostname.trim()}"`, "");
       await fetchInfo();
     } catch (e) {
       showToast(`Failed to set hostname: ${String(e)}`, "error");
@@ -87,7 +88,7 @@ export function SystemPage() {
     try {
       await api.rebootDevice(activeDeviceId);
       showToast("Device rebooting...", "success");
-      api.saveLog(activeDeviceId, "system", "Device reboot initiated", "").catch(() => {});
+      logUserAction(activeDeviceId, "system", "Device reboot initiated", "");
       setShowRebootDialog(false);
     } catch (e) {
       showToast(`Failed to reboot device: ${String(e)}`, "error");

@@ -98,10 +98,12 @@ export class Collector {
   }
 }
 
+/** Load historical samples from SQLite. Returns sorted FanSample[].
+ *  Does NOT publish to EventBus — caller should restore() into store directly. */
 export async function loadHistory(
   deviceId: number,
   minutes: number
-): Promise<void> {
+): Promise<FanSample[]> {
   try {
     const fanSamples = await api.getRecentFanSamples(deviceId, minutes);
     const tempSamples = await api.getRecentTempSamples(deviceId, minutes);
@@ -156,6 +158,7 @@ export async function loadHistory(
       sourceList.map((s) => [s.slot, s.name || `Source ${s.slot}`])
     );
 
+    const samples: FanSample[] = [];
     for (const [ts, bucket] of buckets) {
       const fans = Array.from(bucket.fans.entries()).map(
         ([id, { sum, count, duty }]) => ({
@@ -176,15 +179,12 @@ export async function loadHistory(
         })
       );
 
-      const sample: FanSample = {
-        timestamp: ts,
-        fans,
-        temperatures,
-        system: null,
-      };
-      eventBus.publish(sample);
+      samples.push({ timestamp: ts, fans, temperatures, system: null });
     }
+
+    return samples.sort((a, b) => a.timestamp - b.timestamp);
   } catch (e) {
     console.warn("loadHistory failed:", e);
+    return [];
   }
 }

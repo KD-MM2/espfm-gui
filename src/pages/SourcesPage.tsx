@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Plus, ScanLine } from "lucide-react";
 import { api, type SourceState, type Ds18b20Device } from "../lib/api";
+import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,7 @@ export function SourcesPage() {
       const created = await api.createSource(activeDeviceId, data);
       setSources((prev) => [...prev, created]);
       showToast("Source created", "success");
-      api.saveLog(activeDeviceId, "source", `Source "${created.name}" created (${created.source_type})`, `slot=${created.slot}`).catch(() => {});
+      logUserAction(activeDeviceId, "source", `Source "${created.name}" created (${created.source_type})`, `slot=${created.slot}`);
       setShowForm(false);
     } catch (err) {
       showToast(`Failed to create source: ${String(err)}`, "error");
@@ -67,7 +68,7 @@ export function SourcesPage() {
       await api.deleteSource(activeDeviceId, source.slot);
       setSources((prev) => prev.filter((s) => s.slot !== source.slot));
       showToast("Source deleted", "success");
-      api.saveLog(activeDeviceId, "source", `Source "${source.name}" deleted`, `slot=${source.slot}`).catch(() => {});
+      logUserAction(activeDeviceId, "source", `Source "${source.name}" deleted`, `slot=${source.slot}`);
     } catch (err) {
       showToast(`Failed to delete source: ${String(err)}`, "error");
     }
@@ -102,7 +103,7 @@ export function SourcesPage() {
           )
         );
         showToast("Source updated", "success");
-        api.saveLog(activeDeviceId, "source", `Source "${data.name}" renamed`, `slot=${editingSource.slot}`).catch(() => {});
+        logUserAction(activeDeviceId, "source", `Source "${data.name}" renamed`, `slot=${editingSource.slot}`);
         closeForm();
       } catch (err) {
         showToast(`Failed to update source: ${String(err)}`, "error");
@@ -116,7 +117,7 @@ export function SourcesPage() {
           prev.map((s) => (s.slot === editingSource.slot ? created : s))
         );
         showToast("Source recreated", "success");
-        api.saveLog(activeDeviceId, "source", `Source "${data.name}" recreated (${data.source_type})`, `slot=${editingSource.slot}`).catch(() => {});
+        logUserAction(activeDeviceId, "source", `Source "${data.name}" recreated (${data.source_type})`, `slot=${editingSource.slot}`);
         closeForm();
       } catch (err) {
         showToast(`Failed to update source: ${String(err)}`, "error");
@@ -145,7 +146,7 @@ export function SourcesPage() {
         prev.map((s) => (s.slot === source.slot ? { ...s, temp_c: tempC } : s))
       );
       showToast("Temperature updated", "success");
-      api.saveLog(activeDeviceId, "source", `Source "${source.name}" temp set to ${tempC}°C`, `slot=${source.slot}`).catch(() => {});
+      logUserAction(activeDeviceId, "source", `Source "${source.name}" temp set to ${tempC}°C`, `slot=${source.slot}`);
     } catch (err) {
       showToast(`Failed to set temperature: ${String(err)}`, "error");
     }

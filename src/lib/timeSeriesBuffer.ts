@@ -34,6 +34,32 @@ export class TimeSeriesBuffer {
     }
   }
 
+  /** Idempotent restore from historical data. Replaces all samples.
+   *  Samples must be sorted by timestamp ascending. Deduplicates by timestamp. */
+  restore(samples: FanSample[]): void {
+    const seen = new Set<number>();
+    const deduped: FanSample[] = [];
+    for (const s of samples) {
+      if (!seen.has(s.timestamp)) {
+        seen.add(s.timestamp);
+        deduped.push(s);
+      }
+    }
+    this.samples = deduped.slice(-this.maxSamples);
+  }
+
+  /** Merge new samples into existing buffer, preserving chronological order.
+   *  Deduplicates by timestamp — newer data wins on conflict. */
+  merge(incoming: FanSample[]): void {
+    const byTs = new Map<number, FanSample>();
+    // Existing samples first
+    for (const s of this.samples) byTs.set(s.timestamp, s);
+    // Incoming overwrites on same timestamp (newer wins)
+    for (const s of incoming) byTs.set(s.timestamp, s);
+    const merged = Array.from(byTs.values()).sort((a, b) => a.timestamp - b.timestamp);
+    this.samples = merged.slice(-this.maxSamples);
+  }
+
   clear(): void {
     this.samples = [];
   }

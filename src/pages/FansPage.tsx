@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
 import { api, type FanState, type SourceState, type CurveState, type ScheduleState } from "../lib/api";
+import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -73,7 +74,7 @@ export function FansPage() {
       }
       setFans((prev) => [...prev, final]);
       showToast("Fan created", "success");
-      api.saveLog(activeDeviceId, "fan", `Fan "${final.name}" created`, `slot=${final.slot}`).catch(() => {});
+      logUserAction(activeDeviceId, "fan", `Fan "${final.name}" created`, `slot=${final.slot}`);
       closeForm();
     } catch (err) {
       showToast(`Failed to create fan: ${String(err)}`, "error");
@@ -100,7 +101,7 @@ export function FansPage() {
         prev.map((f) => (f.slot === updated.slot ? updated : f))
       );
       showToast("Fan updated", "success");
-      api.saveLog(activeDeviceId, "fan", `Fan "${updated.name}" updated`, `slot=${updated.slot}`).catch(() => {});
+      logUserAction(activeDeviceId, "fan", `Fan "${updated.name}" updated`, `slot=${updated.slot}`);
       closeForm();
     } catch (err) {
       showToast(`Failed to update fan: ${String(err)}`, "error");
@@ -117,7 +118,7 @@ export function FansPage() {
         prev.map((f) => (f.slot === updated.slot ? updated : f))
       );
       showToast(fan.enabled ? "Fan disabled" : "Fan enabled", "success");
-      api.saveLog(activeDeviceId, "fan", `Fan "${fan.name}" ${!fan.enabled ? "enabled" : "disabled"}`, `slot=${fan.slot}`).catch(() => {});
+      logUserAction(activeDeviceId, "fan", `Fan "${fan.name}" ${!fan.enabled ? "enabled" : "disabled"}`, `slot=${fan.slot}`);
     } catch (err) {
       showToast(`Failed to toggle fan: ${String(err)}`, "error");
     }
@@ -130,7 +131,7 @@ export function FansPage() {
       await api.deleteFan(activeDeviceId, fan.slot);
       setFans((prev) => prev.filter((f) => f.slot !== fan.slot));
       showToast("Fan deleted", "success");
-      api.saveLog(activeDeviceId, "fan", `Fan "${fan.name}" deleted`, `slot=${fan.slot}`).catch(() => {});
+      logUserAction(activeDeviceId, "fan", `Fan "${fan.name}" deleted`, `slot=${fan.slot}`);
     } catch (err) {
       showToast(`Failed to delete fan: ${String(err)}`, "error");
     }

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { Wifi, WifiOff, RefreshCw, Loader2 } from "lucide-react";
 import { api, type WifiAp, type WifiStatus } from "../lib/api";
+import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
 
@@ -46,7 +47,7 @@ export function WifiPage() {
     setConnecting(true);
     try {
       await api.wifiConnect(activeDeviceId, ssid.trim(), password);
-      api.saveLog(activeDeviceId, "system", `WiFi connect to "${ssid.trim()}"`, "").catch(() => {});
+      logUserAction(activeDeviceId, "system", `WiFi connect to "${ssid.trim()}"`, "");
       // Refresh status after connect attempt
       await fetchStatus();
       setSsid("");

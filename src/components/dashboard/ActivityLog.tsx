@@ -1,4 +1,4 @@
-type EventType = "fan" | "temp" | "schedule" | "error";
+type EventType = "fan" | "temp" | "schedule" | "error" | "system" | "source" | "curve";
 
 export interface ActivityEntry {
   id: string;
@@ -7,11 +7,14 @@ export interface ActivityEntry {
   time: string;
 }
 
-const DOT_COLORS: Record<EventType, string> = {
+const DOT_COLORS: Record<string, string> = {
   fan: "bg-success",
   temp: "bg-info",
   schedule: "bg-warning",
   error: "bg-destructive",
+  system: "bg-muted-foreground",
+  source: "bg-info",
+  curve: "bg-warning",
 };
 
 interface ActivityLogProps {

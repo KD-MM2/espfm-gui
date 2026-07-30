@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { Loader2, Trash2, ChevronLeft, ChevronRight, Server } from "lucide-react";
 import { api, type ActivityLogEntry } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
+import { useActivityStore } from "../stores/activityStore";
 import { useToast } from "@/hooks/use-toast";
 import { LogDetailDialog } from "../components/logs/LogDetailDialog";
 
@@ -13,37 +14,27 @@ const typeColors: Record<string, { bg: string; text: string }> = {
   schedule: { bg: "#fefce8", text: "#a16207" },
   error: { bg: "#fdf2f8", text: "#be185d" },
   system: { bg: "#f0f0f3", text: "#60646c" },
+  source: { bg: "#eff6ff", text: "#2563eb" },
+  curve: { bg: "#fefce8", text: "#a16207" },
 };
 
-const LOG_TYPES = ["all", "fan", "temp", "schedule", "error", "system"] as const;
+const LOG_TYPES = ["all", "fan", "temp", "schedule", "error", "system", "source", "curve"] as const;
 
 export function LogsPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
   const { showToast } = useToast();
-  const [logs, setLogs] = useState<ActivityLogEntry[]>([]);
-  const [loading, setLoading] = useState(false);
+  const storeEntries = useActivityStore((s) => s.entries);
   const [page, setPage] = useState(0);
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedEntry, setSelectedEntry] = useState<ActivityLogEntry | null>(null);
   const [clearing, setClearing] = useState(false);
 
-  const fetchLogs = useCallback(async () => {
-    if (activeDeviceId == null) return;
-    setLoading(true);
-    try {
-      const eventType = typeFilter === "all" ? undefined : typeFilter;
-      const data = await api.getLogs(activeDeviceId, PAGE_SIZE, page * PAGE_SIZE, eventType);
-      setLogs(data);
-    } catch (err) {
-      showToast(`Failed to load logs: ${String(err)}`, "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [activeDeviceId, page, typeFilter, showToast]);
-
-  useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+  // Derive filtered + paginated entries from store
+  const filtered = typeFilter === "all"
+    ? storeEntries
+    : storeEntries.filter((e) => e.event_type === typeFilter);
+  const logs = filtered.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE);
+  const loading = useActivityStore((s) => s.loading);
 
   useEffect(() => {
     setPage(0);
@@ -55,7 +46,7 @@ export function LogsPage() {
     setClearing(true);
     try {
       await api.clearLogs(activeDeviceId);
-      setLogs([]);
+      useActivityStore.getState().clear();
       setPage(0);
     } catch (err) {
       showToast(`Failed to clear logs: ${String(err)}`, "error");

@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { FanTempChart } from "../components/dashboard/FanTempChart";
 import { SystemInfoCard } from "../components/dashboard/SystemInfoCard";
-import { ActivityLog, type ActivityEntry } from "../components/dashboard/ActivityLog";
+import { ActivityLog } from "../components/dashboard/ActivityLog";
 import {
   api,
   type SystemInfo,
@@ -12,24 +12,9 @@ import {
   type WifiStatus,
 } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
-import {
-  useChartStore,
-  startChartStore,
-  stopChartStore,
-  clearChartBuffer,
-} from "../stores/chartStore";
-import { Collector, loadHistory } from "../lib/collectors";
-import {
-  startSqliteWriter,
-  stopSqliteWriter,
-  setWriterDevice,
-} from "../lib/sqliteWriter";
-import {
-  startActivityDetector,
-  stopActivityDetector,
-  setDetectorDevice,
-  setActivityCallback,
-} from "../lib/activityDetector";
+import { useChartStore } from "../stores/chartStore";
+import { useActivityStore } from "../stores/activityStore";
+import { startMonitoringSession, changeTimeRange } from "../lib/monitoringSession";
 import type { TimeRange } from "../lib/timeSeriesBuffer";
 
 export function DashboardPage() {
@@ -42,18 +27,16 @@ export function DashboardPage() {
   const fanNames = useChartStore((s) => s.fanNames);
   const tempNames = useChartStore((s) => s.tempNames);
   const timeRange = useChartStore((s) => s.timeRange);
-  const setTimeRange = useChartStore((s) => s.setTimeRange);
   const bucketSize = useChartStore((s) => s.bucketSize);
   const setBucketSize = useChartStore((s) => s.setBucketSize);
 
+  const activityEntries = useActivityStore((s) => s.entries);
+
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
-  const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [sources, setSources] = useState<SourceState[]>([]);
   const [curves, setCurves] = useState<CurveState[]>([]);
   const [schedules, setSchedules] = useState<ScheduleState[]>([]);
   const [wifiStatus, setWifiStatus] = useState<WifiStatus | null>(null);
-  const activityIdRef = useRef(0);
-  const collectorRef = useRef<Collector | null>(null);
 
   const RANGE_MINUTES: Record<TimeRange, number> = {
     "30m": 30,
@@ -62,68 +45,19 @@ export function DashboardPage() {
     "24h": 1440,
   };
 
-  // Start event-driven pipeline on mount
+  // Start/restore monitoring session (session-scoped, survives navigation)
   useEffect(() => {
     if (!activeDeviceId) return;
-
-    // Configure writer and detector
-    setWriterDevice(activeDeviceId);
-    setDetectorDevice(activeDeviceId);
-
-    // Set up activity detector callback
-    setActivityCallback((message: string, _details: string) => {
-      activityIdRef.current += 1;
-      setActivity((a) => [
-        {
-          id: String(activityIdRef.current),
-          type: "fan",
-          message,
-          time: "just now",
-        },
-        ...a.slice(0, 49),
-      ]);
-    });
-
-    // Start subscribers
-    startChartStore();
-    startSqliteWriter();
-    startActivityDetector();
-
-    // Load history then start collector
-    const deviceId = activeDeviceId;
-    void loadHistory(deviceId, RANGE_MINUTES[timeRange]).then(() => {
-      const collector = new Collector(deviceId);
-      collectorRef.current = collector;
-      return collector.start();
-    });
-
-    return () => {
-      // Stop all subscribers
-      stopChartStore();
-      stopSqliteWriter();
-      stopActivityDetector();
-      setWriterDevice(null);
-      setDetectorDevice(null);
-      setActivityCallback(null);
-
-      // Stop collector
-      if (collectorRef.current) {
-        collectorRef.current.stop();
-        collectorRef.current = null;
-      }
-    };
+    void startMonitoringSession(activeDeviceId, RANGE_MINUTES[timeRange]);
+    // No cleanup — session persists across page navigation
   }, [activeDeviceId]);
 
   // Handle time range change
   const handleTimeRangeChange = useCallback(
     (range: TimeRange) => {
-      setTimeRange(range);
-      clearChartBuffer();
-      if (activeDeviceId) {
-        void loadHistory(activeDeviceId, RANGE_MINUTES[range]);
-      }
+      void changeTimeRange(range);
     },
-    [activeDeviceId, setTimeRange]
+    []
   );
 
   // System info polling
@@ -252,10 +186,15 @@ export function DashboardPage() {
           />
           <div className="flex min-h-0 flex-1 flex-col">
             <ActivityLog
-              entries={activity}
+              entries={activityEntries.slice(0, 7).map((e) => ({
+                id: String(e.id),
+                type: (e.event_type as "fan" | "temp" | "schedule" | "error" | "system" | "source" | "curve") || "system",
+                message: e.message,
+                time: e.ts,
+              }))}
               maxItems={7}
               onShowAll={() => navigate("/logs")}
-              totalCount={activity.length}
+              totalCount={activityEntries.length}
             />
           </div>
         </div>
