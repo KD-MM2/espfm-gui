@@ -168,7 +168,7 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
   const dutyGridLines = [0, 20, 40, 60, 80, 100];
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-row gap-3">
       {/* SVG Graph */}
       <div className="min-h-60 flex-1 rounded-lg border border-border bg-card p-3">
         <svg

@@ -1,6 +1,7 @@
 import { GitBranch, Pencil, Trash2 } from "lucide-react";
 import type { CurveState } from "../../lib/api";
 import { EmptyState } from "../ui/EmptyState";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface CurveListProps {
   curves: CurveState[];
@@ -23,42 +24,45 @@ function CurveCard({
     .join(", ");
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="flex items-start justify-between">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="truncate text-sm font-semibold text-foreground">
-              {curve.name}
-            </h3>
-            <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-              {curve.points.length} {curve.points.length === 1 ? "point" : "points"}
-            </span>
+    <Card className="py-0 gap-0 rounded-lg">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <h3 className="truncate text-sm font-semibold text-foreground">
+                {curve.name}
+              </h3>
+              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                {curve.points.length}{" "}
+                {curve.points.length === 1 ? "point" : "points"}
+              </span>
+            </div>
+            <div className="mt-2 text-xs text-muted-foreground font-mono">
+              {pointsSummary}
+            </div>
           </div>
-          <div className="mt-2 text-xs text-muted-foreground font-mono">
-            {pointsSummary}
-          </div>
-        </div>
 
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            type="button"
-            onClick={() => onEdit(curve)}
-            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted"
-            title="Edit curve"
-          >
-            <Pencil size={16} />
-          </button>
-          <button
-            type="button"
-            onClick={() => onDelete(curve)}
-            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-            title="Delete curve"
-          >
-            <Trash2 size={16} />
-          </button>
+          <div className="flex shrink-0 items-center gap-1">
+            <button
+              type="button"
+              onClick={() => onEdit(curve)}
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted"
+              title="Edit curve"
+            >
+              <Pencil size={16} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete(curve)}
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+              title="Delete curve"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
