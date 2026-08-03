@@ -2,6 +2,8 @@ import { GitBranch, Pencil, Trash2 } from "lucide-react";
 import type { CurveState } from "../../lib/api";
 import { EmptyState } from "../ui/EmptyState";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 
 interface CurveListProps {
   curves: CurveState[];
@@ -10,18 +12,8 @@ interface CurveListProps {
   onCreateFirst: () => void;
 }
 
-function CurveCard({
-  curve,
-  onEdit,
-  onDelete,
-}: {
-  curve: CurveState;
-  onEdit: (curve: CurveState) => void;
-  onDelete: (curve: CurveState) => void;
-}) {
-  const pointsSummary = curve.points
-    .map((p) => `${p.temp_c}C:${p.duty}%`)
-    .join(", ");
+function CurveCard({ curve, onEdit, onDelete }: { curve: CurveState; onEdit: (curve: CurveState) => void; onDelete: (curve: CurveState) => void }) {
+  const pointsSummary = curve.points.map((p) => `${p.temp_c}C:${p.duty}%`).join(", ");
 
   return (
     <Card className="py-0 gap-0 rounded-lg">
@@ -29,36 +21,21 @@ function CurveCard({
         <div className="flex items-start justify-between">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="truncate text-sm font-semibold text-foreground">
-                {curve.name}
-              </h3>
-              <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
-                {curve.points.length}{" "}
-                {curve.points.length === 1 ? "point" : "points"}
-              </span>
+              <h3 className="truncate text-sm font-semibold text-foreground">{curve.name}</h3>
+              <Badge className="bg-purple-50 text-[10px] text-purple-700 dark:bg-purple-800 dark:text-purple-200">
+                {curve.points.length} {curve.points.length === 1 ? "point" : "points"}
+              </Badge>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground font-mono">
-              {pointsSummary}
-            </div>
+            <div className="mt-2 text-xs text-muted-foreground font-mono">{pointsSummary}</div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
-            <button
-              type="button"
-              onClick={() => onEdit(curve)}
-              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted"
-              title="Edit curve"
-            >
+            <Button variant="ghost" size="icon" onClick={() => onEdit(curve)} title="Edit curve">
               <Pencil size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => onDelete(curve)}
-              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-              title="Delete curve"
-            >
+            </Button>
+            <Button variant="ghost" size="icon" onClick={() => onDelete(curve)} title="Delete curve" className="hover:bg-destructive/10 hover:text-destructive">
               <Trash2 size={16} />
-            </button>
+            </Button>
           </div>
         </div>
       </CardContent>
@@ -66,33 +43,15 @@ function CurveCard({
   );
 }
 
-export function CurveList({
-  curves,
-  onEdit,
-  onDelete,
-  onCreateFirst,
-}: CurveListProps) {
+export function CurveList({ curves, onEdit, onDelete, onCreateFirst }: CurveListProps) {
   if (curves.length === 0) {
-    return (
-      <EmptyState
-        icon={<GitBranch size={40} />}
-        title="No curves configured"
-        description="Create your first curve to get started"
-        actionLabel="Create your first curve"
-        onAction={onCreateFirst}
-      />
-    );
+    return <EmptyState icon={<GitBranch size={40} />} title="No curves configured" description="Create your first curve to get started" actionLabel="Create your first curve" onAction={onCreateFirst} />;
   }
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {curves.map((curve) => (
-        <CurveCard
-          key={curve.slot}
-          curve={curve}
-          onEdit={onEdit}
-          onDelete={onDelete}
-        />
+        <CurveCard key={curve.slot} curve={curve} onEdit={onEdit} onDelete={onDelete} />
       ))}
     </div>
   );

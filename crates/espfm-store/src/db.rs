@@ -18,7 +18,15 @@ impl Database {
     /// Open (or create) a SQLite database at the given path with WAL mode.
     /// Runs all pending Diesel migrations automatically.
     pub fn open(path: &Path) -> Result<Self, diesel::result::ConnectionError> {
-        let mut conn = SqliteConnection::establish(path.to_str().unwrap())?;
+        let path_str = path
+            .to_str()
+            .ok_or_else(|| {
+                diesel::result::ConnectionError::BadConnection(format!(
+                    "non-UTF-8 path: {}",
+                    path.display()
+                ))
+            })?;
+        let mut conn = SqliteConnection::establish(path_str)?;
         diesel::sql_query("PRAGMA journal_mode=WAL; PRAGMA foreign_keys=OFF;")
             .execute(&mut conn)
             .map_err(|e| diesel::result::ConnectionError::BadConnection(e.to_string()))?;

@@ -27,9 +27,7 @@ export function useAutoConnect(): void {
         const addr = `${saved.ip}:${saved.port}`;
 
         // Check if device already exists in store (avoid duplicates)
-        const existing = useDeviceStore.getState().devices.find(
-          (d) => d.ipAddress === addr
-        );
+        const existing = useDeviceStore.getState().devices.find((d) => d.ipAddress === addr);
         if (existing) {
           if (!existing.connected) {
             try {
@@ -44,7 +42,7 @@ export function useAutoConnect(): void {
                 id: result.id,
                 hostname: result.hostname,
                 ipAddress: `${result.ip}:${result.port}`,
-                connected: true,
+                connected: true
               });
               setActiveDevice(result.id);
               setConnectionStatus("connected");
@@ -71,7 +69,7 @@ export function useAutoConnect(): void {
             id: result.id,
             hostname: result.hostname,
             ipAddress: `${result.ip}:${result.port}`,
-            connected: true,
+            connected: true
           });
           setActiveDevice(result.id);
           setConnectionStatus("connected");
@@ -82,7 +80,7 @@ export function useAutoConnect(): void {
             id: Date.now(),
             hostname: saved.hostname,
             ipAddress: addr,
-            connected: false,
+            connected: false
           });
         }
       } catch {
@@ -91,6 +89,8 @@ export function useAutoConnect(): void {
     }
 
     restoreDevice();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 }

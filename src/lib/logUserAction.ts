@@ -12,16 +12,9 @@ export function genId(): number {
  * Log a user action to both SQLite and ActivityStore.
  * Use this in page action handlers (create/update/delete fans, sources, etc.).
  */
-export function logUserAction(
-  deviceId: number,
-  eventType: string,
-  message: string,
-  details: string
-): void {
+export function logUserAction(deviceId: number, eventType: string, message: string, details: string): void {
   // Persist to SQLite
-  api.saveLog(deviceId, eventType, message, details).catch((e) =>
-    console.warn("[logUserAction] saveLog failed:", e)
-  );
+  api.saveLog(deviceId, eventType, message, details).catch((e) => console.warn("[logUserAction] saveLog failed:", e));
 
   // Push to ActivityStore (immediate UI update)
   useActivityStore.getState().push({
@@ -30,6 +23,7 @@ export function logUserAction(
     event_type: eventType,
     message,
     details,
-    ts: new Date().toISOString(),
+    ts: new Date().toISOString()
   });
 }
+

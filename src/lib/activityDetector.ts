@@ -22,9 +22,7 @@ function handleSample(sample: FanSample): void {
       const details = `slot=${fan.id}, old=${prev}%, new=${fan.duty}%`;
 
       // Persist to SQLite
-      api.saveLog(activeDeviceId, "fan", msg, details).catch((e) =>
-        console.warn("[activityDetector] saveLog failed:", e)
-      );
+      api.saveLog(activeDeviceId, "fan", msg, details).catch((e) => console.warn("[activityDetector] saveLog failed:", e));
 
       // Push to ActivityStore (so LogsPage updates in realtime)
       useActivityStore.getState().push({
@@ -33,9 +31,8 @@ function handleSample(sample: FanSample): void {
         event_type: "fan",
         message: msg,
         details,
-        ts: new Date().toISOString(),
+        ts: new Date().toISOString()
       });
-
     }
     prevDuties.set(fan.id, fan.duty);
   }
@@ -55,3 +52,4 @@ export function stopActivityDetector(): void {
   }
   prevDuties.clear();
 }
+

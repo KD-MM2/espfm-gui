@@ -15,9 +15,7 @@ interface DeviceStore {
   addDevice: (device: Device) => void;
   removeDevice: (id: number) => void;
   setActiveDevice: (id: number | null) => void;
-  setConnectionStatus: (
-    status: "connected" | "reconnecting" | "disconnected"
-  ) => void;
+  setConnectionStatus: (status: "connected" | "reconnecting" | "disconnected") => void;
 }
 
 export const useDeviceStore = create<DeviceStore>((set) => ({
@@ -28,18 +26,16 @@ export const useDeviceStore = create<DeviceStore>((set) => ({
   addDevice: (device) =>
     set((state) => {
       // Deduplicate by IP address — don't add if already exists
-      const exists = state.devices.some(
-        (d) => d.ipAddress === device.ipAddress
-      );
+      const exists = state.devices.some((d) => d.ipAddress === device.ipAddress);
       if (exists) return state;
       return { devices: [...state.devices, device] };
     }),
   removeDevice: (id) =>
     set((state) => ({
       devices: state.devices.filter((d) => d.id !== id),
-      activeDeviceId:
-        state.activeDeviceId === id ? null : state.activeDeviceId,
+      activeDeviceId: state.activeDeviceId === id ? null : state.activeDeviceId
     })),
   setActiveDevice: (id) => set({ activeDeviceId: id }),
-  setConnectionStatus: (status) => set({ connectionStatus: status }),
+  setConnectionStatus: (status) => set({ connectionStatus: status })
 }));
+

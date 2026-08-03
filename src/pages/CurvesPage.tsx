@@ -4,6 +4,9 @@ import { api, type CurveState } from "../lib/api";
 import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { CurveList } from "../components/curves/CurveList";
 import { CurveEditor } from "../components/curves/CurveEditor";
 
@@ -42,7 +45,7 @@ export function CurvesPage() {
     setCurveName("");
     setEditorPoints([
       { temp_c: 30, duty: 30 },
-      { temp_c: 70, duty: 100 },
+      { temp_c: 70, duty: 100 }
     ]);
     setShowEditor(true);
   }
@@ -68,20 +71,14 @@ export function CurvesPage() {
 
     try {
       if (editingCurve) {
-        const updated = await api.updateCurve(
-          activeDeviceId,
-          editingCurve.slot,
-          { name: curveName.trim(), points: editorPoints }
-        );
-        setCurves((prev) =>
-          prev.map((c) => (c.slot === updated.slot ? updated : c))
-        );
+        const updated = await api.updateCurve(activeDeviceId, editingCurve.slot, { name: curveName.trim(), points: editorPoints });
+        setCurves((prev) => prev.map((c) => (c.slot === updated.slot ? updated : c)));
         showToast("Curve updated", "success");
         logUserAction(activeDeviceId, "curve", `Curve "${updated.name}" updated`, `slot=${updated.slot}, points=${updated.points.length}`);
       } else {
         const created = await api.createCurve(activeDeviceId, {
           name: curveName.trim(),
-          points: editorPoints,
+          points: editorPoints
         });
         setCurves((prev) => [...prev, created]);
         showToast("Curve created", "success");
@@ -116,59 +113,30 @@ export function CurvesPage() {
             {curves.length} of {MAX_CURVE_SLOTS} slots used
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          disabled={curves.length >= MAX_CURVE_SLOTS}
-          className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <Button onClick={openCreate} disabled={curves.length >= MAX_CURVE_SLOTS}>
           <Plus size={16} />
           Create Curve
-        </button>
+        </Button>
       </div>
 
       {/* Curve list or editor */}
       {showEditor ? (
         <div className="flex min-h-0 flex-1 flex-col gap-4">
           <div className="flex shrink-0 items-center justify-between">
-            <h2 className="text-base font-semibold text-foreground">
-              {editingCurve ? "Edit Curve" : "Create Curve"}
-            </h2>
+            <h2 className="text-base font-semibold text-foreground">{editingCurve ? "Edit Curve" : "Create Curve"}</h2>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={closeEditor}
-                className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-              >
+              <Button variant="outline" onClick={closeEditor}>
                 Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={!curveName.trim() || editorPoints.length < 2}
-                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-              >
+              </Button>
+              <Button onClick={handleSave} disabled={!curveName.trim() || editorPoints.length < 2}>
                 {editingCurve ? "Update" : "Create"}
-              </button>
+              </Button>
             </div>
           </div>
 
           <div className="shrink-0">
-            <label
-              htmlFor="curve-name"
-              className="mb-1 block text-xs font-medium text-muted-foreground"
-            >
-              Name
-            </label>
-            <input
-              id="curve-name"
-              type="text"
-              value={curveName}
-              onChange={(e) => setCurveName(e.target.value)}
-              placeholder="e.g. CPU Fan Curve"
-              className="w-full max-w-sm rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
-              autoFocus
-            />
+            <Label htmlFor="curve-name">Name</Label>
+            <Input id="curve-name" type="text" value={curveName} onChange={(e) => setCurveName(e.target.value)} placeholder="e.g. CPU Fan Curve" className="mt-1 max-w-sm" autoFocus />
           </div>
 
           <div className="min-h-0 flex-1">
@@ -176,13 +144,9 @@ export function CurvesPage() {
           </div>
         </div>
       ) : (
-        <CurveList
-          curves={curves}
-          onEdit={openEdit}
-          onDelete={handleDelete}
-          onCreateFirst={openCreate}
-        />
+        <CurveList curves={curves} onEdit={openEdit} onDelete={handleDelete} onCreateFirst={openCreate} />
       )}
     </div>
   );
 }
+

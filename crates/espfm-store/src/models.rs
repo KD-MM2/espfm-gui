@@ -92,8 +92,8 @@ pub struct ActivityLogRow {
 pub struct NewActivityLog {
     pub device_id: i32,
     pub event_type: String,
-    pub message: String,
-    pub details: String,
+    pub message: Option<String>,
+    pub details: Option<String>,
     pub ts: String,
 }
 

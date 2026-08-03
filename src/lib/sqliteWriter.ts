@@ -13,24 +13,13 @@ function handleSample(sample: FanSample): void {
   if (activeDeviceId == null) return;
 
   if (sample.fans.length > 0) {
-    const fanBatch: [number, number, number][] = sample.fans.map((f) => [
-      f.id,
-      f.rpm,
-      f.duty,
-    ]);
-    api.saveFanSamplesBatch(activeDeviceId, fanBatch).catch((e) =>
-      console.warn("[sqliteWriter] saveFanSamplesBatch failed:", e)
-    );
+    const fanBatch: [number, number, number][] = sample.fans.map((f) => [f.id, f.rpm, f.duty]);
+    api.saveFanSamplesBatch(activeDeviceId, fanBatch).catch((e) => console.warn("[sqliteWriter] saveFanSamplesBatch failed:", e));
   }
 
   if (sample.temperatures.length > 0) {
-    const tempBatch: [number, number][] = sample.temperatures.map((t) => [
-      t.slot,
-      t.temp_c,
-    ]);
-    api.saveTempSamplesBatch(activeDeviceId, tempBatch).catch((e) =>
-      console.warn("[sqliteWriter] saveTempSamplesBatch failed:", e)
-    );
+    const tempBatch: [number, number][] = sample.temperatures.map((t) => [t.slot, t.temp_c]);
+    api.saveTempSamplesBatch(activeDeviceId, tempBatch).catch((e) => console.warn("[sqliteWriter] saveTempSamplesBatch failed:", e));
   }
 }
 
@@ -41,12 +30,13 @@ export function startSqliteWriter(): void {
   unsubscribe = eventBus.subscribe(handleSample);
 
   // Run DB maintenance every 5 minutes (downsample + cleanup)
-  maintenanceInterval = setInterval(() => {
-    if (activeDeviceId == null) return;
-    api.runMaintenance(activeDeviceId).catch((e) =>
-      console.warn("[sqliteWriter] runMaintenance failed:", e)
-    );
-  }, 5 * 60 * 1000);
+  maintenanceInterval = setInterval(
+    () => {
+      if (activeDeviceId == null) return;
+      api.runMaintenance(activeDeviceId).catch((e) => console.warn("[sqliteWriter] runMaintenance failed:", e));
+    },
+    5 * 60 * 1000
+  );
 }
 
 export function stopSqliteWriter(): void {
@@ -59,3 +49,4 @@ export function stopSqliteWriter(): void {
     maintenanceInterval = null;
   }
 }
+

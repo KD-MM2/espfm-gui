@@ -8,8 +8,9 @@ export function useToast(): { showToast: (message: string, type: "success" | "wa
         if (type === "success") toast.success(message);
         else if (type === "error") toast.error(message);
         else toast.warning(message);
-      },
+      }
     }),
     []
   );
 }
+

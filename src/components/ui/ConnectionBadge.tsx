@@ -9,13 +9,13 @@ interface ConnectionBadgeProps {
 const dotColors: Record<ConnectionStatus, string> = {
   connected: "text-success",
   reconnecting: "text-warning",
-  disconnected: "text-destructive",
+  disconnected: "text-destructive"
 };
 
 const labels: Record<ConnectionStatus, string> = {
   connected: "Connected",
   reconnecting: "Reconnecting...",
-  disconnected: "Disconnected",
+  disconnected: "Disconnected"
 };
 
 export function ConnectionBadge({ status }: ConnectionBadgeProps) {
@@ -26,3 +26,4 @@ export function ConnectionBadge({ status }: ConnectionBadgeProps) {
     </div>
   );
 }
+

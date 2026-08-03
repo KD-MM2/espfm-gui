@@ -11,7 +11,7 @@
 
 import { Collector, loadHistory } from "./collectors";
 import { api } from "./api";
-import { useChartStore, startChartStore, stopChartStore, clearChartBuffer } from "../stores/chartStore";
+import { useChartStore, startChartStore, stopChartStore } from "../stores/chartStore";
 import { useActivityStore } from "../stores/activityStore";
 import { useDeviceStore } from "../stores/deviceStore";
 import { startSqliteWriter, stopSqliteWriter, setWriterDevice } from "./sqliteWriter";
@@ -33,10 +33,7 @@ export function getActiveMonitoringDevice(): number | null {
  * Idempotent — calling with the same deviceId is a no-op.
  * Calling with a different deviceId stops the previous session first.
  */
-export async function startMonitoringSession(
-  deviceId: number,
-  timeRangeMinutes: number
-): Promise<void> {
+export async function startMonitoringSession(deviceId: number, timeRangeMinutes: number): Promise<void> {
   console.log(`[monitoringSession] startMonitoringSession(${deviceId}), current=${activeDeviceId}, initialized=${initialized}`);
   if (activeDeviceId === deviceId && initialized) return;
 
@@ -63,10 +60,7 @@ export async function startMonitoringSession(
   startActivityDetector();
 
   // Phase 1: Restore stores directly from SQLite (NOT through EventBus)
-  const [historySamples] = await Promise.all([
-    loadHistory(deviceId, timeRangeMinutes),
-    useActivityStore.getState().loadFromDb(deviceId),
-  ]);
+  const [historySamples] = await Promise.all([loadHistory(deviceId, timeRangeMinutes), useActivityStore.getState().loadFromDb(deviceId)]);
 
   // If another startMonitoringSession call superseded us, abort
   if (gen !== generation) return;
@@ -115,3 +109,4 @@ export async function changeTimeRange(range: TimeRange): Promise<void> {
     useChartStore.getState().restore(samples);
   }
 }
+

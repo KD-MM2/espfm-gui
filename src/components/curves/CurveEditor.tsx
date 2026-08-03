@@ -1,4 +1,13 @@
 import { useRef, useState, useCallback, useEffect } from "react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+// Theme colors — must match @theme in index.css
+const COLORS = {
+  border: "#dcdee0",
+  muted: "#f0f0f3",
+  mutedForeground: "#60646c",
+  foreground: "#171717"
+} as const;
 
 interface CurvePoint {
   temp_c: number;
@@ -49,28 +58,22 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const [dragIndex, setDragIndex] = useState<number | null>(null);
 
-  const getSvgPoint = useCallback(
-    (e: React.MouseEvent): { x: number; y: number } | null => {
-      const svg = svgRef.current;
-      if (!svg) return null;
-      const rect = svg.getBoundingClientRect();
-      const scaleX = SVG_WIDTH / rect.width;
-      const scaleY = SVG_HEIGHT / rect.height;
-      return {
-        x: (e.clientX - rect.left) * scaleX,
-        y: (e.clientY - rect.top) * scaleY,
-      };
-    },
-    []
-  );
+  const getSvgPoint = useCallback((e: React.MouseEvent): { x: number; y: number } | null => {
+    const svg = svgRef.current;
+    if (!svg) return null;
+    const rect = svg.getBoundingClientRect();
+    const scaleX = SVG_WIDTH / rect.width;
+    const scaleY = SVG_HEIGHT / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  }, []);
 
-  const handleMouseDown = useCallback(
-    (index: number, e: React.MouseEvent) => {
-      e.stopPropagation();
-      setDragIndex(index);
-    },
-    []
-  );
+  const handleMouseDown = useCallback((index: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDragIndex(index);
+  }, []);
 
   const handleDoubleClick = useCallback(
     (index: number, e: React.MouseEvent) => {
@@ -103,10 +106,7 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
         }
       }
       // Prevent duplicate temp_c
-      if (
-        (insertIdx > 0 && next[insertIdx - 1]?.temp_c === temp) ||
-        next[insertIdx]?.temp_c === temp
-      ) {
+      if ((insertIdx > 0 && next[insertIdx - 1]?.temp_c === temp) || next[insertIdx]?.temp_c === temp) {
         return;
       }
       next.splice(insertIdx, 0, { temp_c: temp, duty });
@@ -137,9 +137,7 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
       const next = points[dragIndex + 1]?.temp_c ?? TEMP_MAX;
       const clampedTemp = clamp(temp, prev + 1, next - 1);
 
-      const updated = points.map((p, i) =>
-        i === dragIndex ? { temp_c: clampedTemp, duty } : p
-      );
+      const updated = points.map((p, i) => (i === dragIndex ? { temp_c: clampedTemp, duty } : p));
       onChange(updated);
     }
 
@@ -156,12 +154,7 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
   }, [dragIndex, points, onChange]);
 
   // Build polyline path
-  const linePath = points
-    .map(
-      (p, i) =>
-        `${i === 0 ? "M" : "L"} ${tempToX(p.temp_c)} ${dutyToY(p.duty)}`
-    )
-    .join(" ");
+  const linePath = points.map((p, i) => `${i === 0 ? "M" : "L"} ${tempToX(p.temp_c)} ${dutyToY(p.duty)}`).join(" ");
 
   // Grid lines
   const tempGridLines = [0, 20, 40, 60, 80, 100];
@@ -169,89 +162,37 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
 
   return (
     <div className="flex min-h-0 flex-1 flex-row gap-3">
-      {/* SVG Graph */}
-      <div className="min-h-60 flex-1 rounded-lg border border-border bg-card p-3">
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-          className="h-full w-full cursor-crosshair select-none"
-          preserveAspectRatio="xMidYMid meet"
-          onClick={handleSvgClick}
-        >
+      {/* SVG Graph — 70% */}
+      <div className="min-h-60 flex-7 rounded-lg border border-border bg-card p-3">
+        <svg ref={svgRef} viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`} className="h-full w-full cursor-crosshair select-none" preserveAspectRatio="xMidYMid meet" onClick={handleSvgClick}>
           {/* Grid lines */}
           {tempGridLines.map((t) => (
-            <line
-              key={`tg-${t}`}
-              x1={tempToX(t)}
-              y1={PADDING.top}
-              x2={tempToX(t)}
-              y2={PADDING.top + CHART_H}
-              stroke="#f0f0f3"
-              strokeWidth={1}
-            />
+            <line key={`tg-${t}`} x1={tempToX(t)} y1={PADDING.top} x2={tempToX(t)} y2={PADDING.top + CHART_H} stroke={COLORS.muted} strokeWidth={1} />
           ))}
           {dutyGridLines.map((d) => (
-            <line
-              key={`dg-${d}`}
-              x1={PADDING.left}
-              y1={dutyToY(d)}
-              x2={PADDING.left + CHART_W}
-              y2={dutyToY(d)}
-              stroke="#f0f0f3"
-              strokeWidth={1}
-            />
+            <line key={`dg-${d}`} x1={PADDING.left} y1={dutyToY(d)} x2={PADDING.left + CHART_W} y2={dutyToY(d)} stroke={COLORS.muted} strokeWidth={1} />
           ))}
 
           {/* Axes */}
-          <line
-            x1={PADDING.left}
-            y1={PADDING.top}
-            x2={PADDING.left}
-            y2={PADDING.top + CHART_H}
-            stroke="#dcdee0"
-            strokeWidth={1}
-          />
-          <line
-            x1={PADDING.left}
-            y1={PADDING.top + CHART_H}
-            x2={PADDING.left + CHART_W}
-            y2={PADDING.top + CHART_H}
-            stroke="#dcdee0"
-            strokeWidth={1}
-          />
+          <line x1={PADDING.left} y1={PADDING.top} x2={PADDING.left} y2={PADDING.top + CHART_H} stroke={COLORS.border} strokeWidth={1} />
+          <line x1={PADDING.left} y1={PADDING.top + CHART_H} x2={PADDING.left + CHART_W} y2={PADDING.top + CHART_H} stroke={COLORS.border} strokeWidth={1} />
 
           {/* X-axis labels */}
           {tempGridLines.map((t) => (
-            <text
-              key={`tl-${t}`}
-              x={tempToX(t)}
-              y={SVG_HEIGHT - 8}
-              textAnchor="middle"
-              fontSize={11}
-              fill="#60646c"
-            >
+            <text key={`tl-${t}`} x={tempToX(t)} y={SVG_HEIGHT - 8} textAnchor="middle" fontSize={11} fill={COLORS.mutedForeground}>
               {t}°C
             </text>
           ))}
 
           {/* Y-axis labels */}
           {dutyGridLines.map((d) => (
-            <text
-              key={`dl-${d}`}
-              x={PADDING.left - 8}
-              y={dutyToY(d) + 4}
-              textAnchor="end"
-              fontSize={11}
-              fill="#60646c"
-            >
+            <text key={`dl-${d}`} x={PADDING.left - 8} y={dutyToY(d) + 4} textAnchor="end" fontSize={11} fill={COLORS.mutedForeground}>
               {d}%
             </text>
           ))}
 
           {/* Curve line */}
-          {points.length >= 2 && (
-            <path d={linePath} fill="none" stroke="#171717" strokeWidth={2} />
-          )}
+          {points.length >= 2 && <path d={linePath} fill="none" stroke={COLORS.foreground} strokeWidth={2} />}
 
           {/* Control points */}
           {points.map((p, i) => (
@@ -261,7 +202,7 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
               cy={dutyToY(p.duty)}
               r={POINT_RADIUS}
               fill="white"
-              stroke="#171717"
+              stroke={COLORS.foreground}
               strokeWidth={2}
               className="cursor-grab active:cursor-grabbing"
               onMouseDown={(e) => handleMouseDown(i, e)}
@@ -271,36 +212,26 @@ export function CurveEditor({ points, onChange }: CurveEditorProps) {
         </svg>
       </div>
 
-      {/* Points table */}
-      <div className="overflow-x-auto rounded-lg border border-border bg-card">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                #
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                Temperature (°C)
-              </th>
-              <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground">
-                Duty (%)
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+      {/* Points table — 30% */}
+      <div className="flex-3 overflow-x-auto rounded-lg border border-border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>#</TableHead>
+              <TableHead>Temperature (°C)</TableHead>
+              <TableHead>Duty (%)</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {points.map((p, i) => (
-              <tr key={i} className="border-b border-muted last:border-0">
-                <td className="px-4 py-2 text-muted-foreground">{i + 1}</td>
-                <td className="px-4 py-2 font-medium text-foreground">
-                  {p.temp_c}
-                </td>
-                <td className="px-4 py-2 font-medium text-foreground">
-                  {p.duty}
-                </td>
-              </tr>
+              <TableRow key={i}>
+                <TableCell className="text-muted-foreground">{i + 1}</TableCell>
+                <TableCell className="font-medium">{p.temp_c}</TableCell>
+                <TableCell className="font-medium">{p.duty}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

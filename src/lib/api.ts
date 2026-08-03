@@ -97,12 +97,8 @@ export const api = {
   discoverDevices: () => invoke<any[]>("discover_devices"),
   connectDevice: (addr: string) => invoke<any>("connect_device", { addr }),
   disconnectDevice: (id: number) => invoke("disconnect_device", { id }),
-  getFans: (deviceId: number) =>
-    invoke<FanState[]>("get_fans", { deviceId }),
-  createFan: (
-    deviceId: number,
-    req: { name: string; pwm_gpio: number; tach_gpio: number }
-  ) => invoke<FanState>("create_fan", { deviceId, req }),
+  getFans: (deviceId: number) => invoke<FanState[]>("get_fans", { deviceId }),
+  createFan: (deviceId: number, req: { name: string; pwm_gpio: number; tach_gpio: number }) => invoke<FanState>("create_fan", { deviceId, req }),
   updateFan: (
     deviceId: number,
     slot: number,
@@ -120,39 +116,19 @@ export const api = {
       tach_gpio?: number;
     }
   ) => invoke<FanState>("update_fan", { deviceId, slot, req }),
-  deleteFan: (deviceId: number, slot: number) =>
-    invoke("delete_fan", { deviceId, slot }),
-  getSources: (deviceId: number) =>
-    invoke<SourceState[]>("get_sources", { deviceId }),
-  createSource: (
-    deviceId: number,
-    req: { name: string; source_type: string; gpio?: number; rom_code?: string }
-  ) => invoke<SourceState>("create_source", { deviceId, req }),
-  deleteSource: (deviceId: number, slot: number) =>
-    invoke("delete_source", { deviceId, slot }),
-  updateSource: (deviceId: number, slot: number, name: string) =>
-    invoke<SourceState>("update_source", { deviceId, slot, name }),
-  scanDs18b20: (deviceId: number) =>
-    invoke<Ds18b20Device[]>("scan_ds18b20", { deviceId }),
-  configDs18b20: (deviceId: number, gpio: number) =>
-    invoke("config_ds18b20", { deviceId, gpio }),
-  updateManualTemp: (deviceId: number, slot: number, tempC: number) =>
-    invoke("update_manual_temp", { deviceId, slot, tempC }),
-  getCurves: (deviceId: number) =>
-    invoke<CurveState[]>("get_curves", { deviceId }),
-  createCurve: (
-    deviceId: number,
-    req: { name: string; points: { temp_c: number; duty: number }[] }
-  ) => invoke<CurveState>("create_curve", { deviceId, req }),
-  updateCurve: (
-    deviceId: number,
-    slot: number,
-    req: { name: string; points: { temp_c: number; duty: number }[] }
-  ) => invoke<CurveState>("update_curve", { deviceId, slot, req }),
-  deleteCurve: (deviceId: number, slot: number) =>
-    invoke("delete_curve", { deviceId, slot }),
-  getSchedules: (deviceId: number) =>
-    invoke<ScheduleState[]>("get_schedules", { deviceId }),
+  deleteFan: (deviceId: number, slot: number) => invoke("delete_fan", { deviceId, slot }),
+  getSources: (deviceId: number) => invoke<SourceState[]>("get_sources", { deviceId }),
+  createSource: (deviceId: number, req: { name: string; source_type: string; gpio?: number; rom_code?: string }) => invoke<SourceState>("create_source", { deviceId, req }),
+  deleteSource: (deviceId: number, slot: number) => invoke("delete_source", { deviceId, slot }),
+  updateSource: (deviceId: number, slot: number, name: string) => invoke<SourceState>("update_source", { deviceId, slot, name }),
+  scanDs18b20: (deviceId: number) => invoke<Ds18b20Device[]>("scan_ds18b20", { deviceId }),
+  configDs18b20: (deviceId: number, gpio: number) => invoke("config_ds18b20", { deviceId, gpio }),
+  updateManualTemp: (deviceId: number, slot: number, tempC: number) => invoke("update_manual_temp", { deviceId, slot, tempC }),
+  getCurves: (deviceId: number) => invoke<CurveState[]>("get_curves", { deviceId }),
+  createCurve: (deviceId: number, req: { name: string; points: { temp_c: number; duty: number }[] }) => invoke<CurveState>("create_curve", { deviceId, req }),
+  updateCurve: (deviceId: number, slot: number, req: { name: string; points: { temp_c: number; duty: number }[] }) => invoke<CurveState>("update_curve", { deviceId, slot, req }),
+  deleteCurve: (deviceId: number, slot: number) => invoke("delete_curve", { deviceId, slot }),
+  getSchedules: (deviceId: number) => invoke<ScheduleState[]>("get_schedules", { deviceId }),
   createSchedule: (
     deviceId: number,
     req: {
@@ -174,54 +150,29 @@ export const api = {
       enabled?: boolean;
     }
   ) => invoke<ScheduleState>("update_schedule", { deviceId, slot, req }),
-  deleteSchedule: (deviceId: number, slot: number) =>
-    invoke("delete_schedule", { deviceId, slot }),
-  getSystemInfo: (deviceId: number) =>
-    invoke<SystemInfo>("get_system_info", { deviceId }),
-  setHostname: (deviceId: number, hostname: string) =>
-    invoke("set_hostname", { deviceId, hostname }),
-  rebootDevice: (deviceId: number) =>
-    invoke("reboot_device", { deviceId }),
-  exportConfig: (deviceId: number) =>
-    invoke<string>("export_config", { deviceId }),
-  importConfig: (deviceId: number, config: string) =>
-    invoke("import_config", { deviceId, config }),
-  wifiScan: (deviceId: number) =>
-    invoke<WifiAp[]>("wifi_scan", { deviceId }),
-  wifiConnect: (deviceId: number, ssid: string, password: string) =>
-    invoke("wifi_connect", { deviceId, ssid, password }),
-  wifiStatus: (deviceId: number) =>
-    invoke<WifiStatus>("wifi_status", { deviceId }),
-  saveFanSample: (deviceId: number, slot: number, rpm: number, duty: number) =>
-    invoke("save_fan_sample", { deviceId, slot, rpm, duty }),
-  saveFanSamplesBatch: (deviceId: number, samples: [number, number, number][]) =>
-    invoke("save_fan_samples_batch", { deviceId, samples }),
-  saveTempSample: (deviceId: number, slot: number, tempC: number) =>
-    invoke("save_temp_sample", { deviceId, slot, tempC }),
-  saveTempSamplesBatch: (deviceId: number, samples: [number, number][]) =>
-    invoke("save_temp_samples_batch", { deviceId, samples }),
-  saveLog: (
-    deviceId: number,
-    eventType: string,
-    message: string,
-    details: string
-  ) => invoke("save_log", { deviceId, eventType, message, details }),
-  getLogs: (deviceId: number, limit: number, offset: number, eventType?: string) =>
-    invoke<ActivityLogEntry[]>("get_logs", { deviceId, limit, offset, eventType }),
+  deleteSchedule: (deviceId: number, slot: number) => invoke("delete_schedule", { deviceId, slot }),
+  getSystemInfo: (deviceId: number) => invoke<SystemInfo>("get_system_info", { deviceId }),
+  setHostname: (deviceId: number, hostname: string) => invoke("set_hostname", { deviceId, hostname }),
+  rebootDevice: (deviceId: number) => invoke("reboot_device", { deviceId }),
+  exportConfig: (deviceId: number) => invoke<string>("export_config", { deviceId }),
+  importConfig: (deviceId: number, config: string) => invoke("import_config", { deviceId, config }),
+  wifiScan: (deviceId: number) => invoke<WifiAp[]>("wifi_scan", { deviceId }),
+  wifiConnect: (deviceId: number, ssid: string, password: string) => invoke("wifi_connect", { deviceId, ssid, password }),
+  wifiStatus: (deviceId: number) => invoke<WifiStatus>("wifi_status", { deviceId }),
+  saveFanSample: (deviceId: number, slot: number, rpm: number, duty: number) => invoke("save_fan_sample", { deviceId, slot, rpm, duty }),
+  saveFanSamplesBatch: (deviceId: number, samples: [number, number, number][]) => invoke("save_fan_samples_batch", { deviceId, samples }),
+  saveTempSample: (deviceId: number, slot: number, tempC: number) => invoke("save_temp_sample", { deviceId, slot, tempC }),
+  saveTempSamplesBatch: (deviceId: number, samples: [number, number][]) => invoke("save_temp_samples_batch", { deviceId, samples }),
+  saveLog: (deviceId: number, eventType: string, message: string, details: string) => invoke("save_log", { deviceId, eventType, message, details }),
+  getLogs: (deviceId: number, limit: number, offset: number, eventType?: string) => invoke<ActivityLogEntry[]>("get_logs", { deviceId, limit, offset, eventType }),
   clearLogs: (deviceId: number) => invoke("clear_logs", { deviceId }),
-  runMaintenance: (deviceId: number) =>
-    invoke<[number, number, number, number, number]>("run_maintenance", { deviceId }),
-  saveAppState: (key: string, value: string) =>
-    invoke("save_app_state", { key, value }),
-  deleteAppState: (key: string) =>
-    invoke<boolean>("delete_app_state", { key }),
-  getAppState: (key: string) =>
-    invoke<string | null>("get_app_state", { key }),
-  saveDeviceInfo: (hostname: string, ip: string, port: number) =>
-    invoke("save_device_info", { hostname, ip, port }),
+  runMaintenance: (deviceId: number) => invoke<[number, number, number, number, number]>("run_maintenance", { deviceId }),
+  saveAppState: (key: string, value: string) => invoke("save_app_state", { key, value }),
+  deleteAppState: (key: string) => invoke<boolean>("delete_app_state", { key }),
+  getAppState: (key: string) => invoke<string | null>("get_app_state", { key }),
+  saveDeviceInfo: (hostname: string, ip: string, port: number) => invoke("save_device_info", { hostname, ip, port }),
   getSavedDevices: () => invoke<SavedDevice[]>("get_saved_devices"),
-  getRecentFanSamples: (deviceId: number, minutes: number) =>
-    invoke<FanSamplePoint[]>("get_recent_fan_samples", { deviceId, minutes }),
-  getRecentTempSamples: (deviceId: number, minutes: number) =>
-    invoke<TempSamplePoint[]>("get_recent_temp_samples", { deviceId, minutes }),
+  getRecentFanSamples: (deviceId: number, minutes: number) => invoke<FanSamplePoint[]>("get_recent_fan_samples", { deviceId, minutes }),
+  getRecentTempSamples: (deviceId: number, minutes: number) => invoke<TempSamplePoint[]>("get_recent_temp_samples", { deviceId, minutes })
 };
+

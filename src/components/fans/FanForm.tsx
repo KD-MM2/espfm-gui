@@ -3,20 +3,8 @@ import type { FanState, SourceState, CurveState, ScheduleState } from "../../lib
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const PWM_GPIO_OPTIONS = [4, 5, 6, 7, 15, 16, 17, 18];
 const TACH_GPIO_OPTIONS = [8, 9, 10, 11, 12, 13, 14];
@@ -46,40 +34,20 @@ export interface FanFormData {
   group_id: number;
 }
 
-export function FanForm({
-  open,
-  onOpenChange,
-  onSubmit,
-  initialData,
-  sources,
-  curves,
-  schedules,
-}: FanFormProps) {
+export function FanForm({ open, onOpenChange, onSubmit, initialData, sources, curves, schedules }: FanFormProps) {
   const isEdit = initialData != null;
 
   const [name, setName] = useState(initialData?.name ?? "");
-  const [pwmGpio, setPwmGpio] = useState<number>(
-    initialData?.pwm_gpio ?? PWM_GPIO_OPTIONS[0]
-  );
-  const [tachGpio, setTachGpio] = useState<number>(
-    initialData?.tach_gpio ?? TACH_GPIO_OPTIONS[0]
-  );
+  const [pwmGpio, setPwmGpio] = useState<number>(initialData?.pwm_gpio ?? PWM_GPIO_OPTIONS[0]);
+  const [tachGpio, setTachGpio] = useState<number>(initialData?.tach_gpio ?? TACH_GPIO_OPTIONS[0]);
   const [mode, setMode] = useState(initialData?.mode ?? "manual");
   const [duty, setDuty] = useState<number>(initialData?.duty_pct ?? 50);
   const [inverted, setInverted] = useState(initialData?.inverted ?? false);
   const [enabled, setEnabled] = useState(initialData?.enabled ?? true);
-  const [sourceId, setSourceId] = useState(
-    String(initialData?.source_id ?? NONE_VALUE)
-  );
-  const [curveId, setCurveId] = useState(
-    String(initialData?.curve_id ?? NONE_VALUE)
-  );
-  const [scheduleId, setScheduleId] = useState(
-    String(initialData?.schedule_id ?? NONE_VALUE)
-  );
-  const [groupId, setGroupId] = useState<number>(
-    initialData?.group_id ?? 0
-  );
+  const [sourceId, setSourceId] = useState(String(initialData?.source_id ?? NONE_VALUE));
+  const [curveId, setCurveId] = useState(String(initialData?.curve_id ?? NONE_VALUE));
+  const [scheduleId, setScheduleId] = useState(String(initialData?.schedule_id ?? NONE_VALUE));
+  const [groupId, setGroupId] = useState<number>(initialData?.group_id ?? 0);
 
   // Reset form when initialData changes
   useEffect(() => {
@@ -112,57 +80,32 @@ export function FanForm({
       source_id: Number(sourceId),
       curve_id: Number(curveId),
       schedule_id: Number(scheduleId),
-      group_id: groupId,
+      group_id: groupId
     });
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="sm:max-w-lg min-w-lg">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit Fan" : "Create Fan"}</DialogTitle>
         </DialogHeader>
-
         <form onSubmit={handleSubmit} className="space-y-3">
           {/* Name */}
           <div>
             <Label htmlFor="fan-name">Name</Label>
-            <Input
-              id="fan-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. CPU Fan"
-              required
-              autoFocus
-              className="mt-1"
-            />
+            <Input id="fan-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. CPU Fan" required autoFocus className="mt-1" />
           </div>
 
           {/* GPIO row */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <Label htmlFor="fan-pwm">PWM GPIO</Label>
-              <Input
-                id="fan-pwm"
-                type="number"
-                min={0}
-                max={48}
-                value={pwmGpio}
-                onChange={(e) => setPwmGpio(Number(e.target.value))}
-                className="mt-1"
-              />
+              <Input id="fan-pwm" type="number" min={0} max={48} value={pwmGpio} onChange={(e) => setPwmGpio(Number(e.target.value))} className="mt-1" />
             </div>
             <div>
               <Label htmlFor="fan-tach">Tach GPIO</Label>
-              <Input
-                id="fan-tach"
-                type="number"
-                min={0}
-                max={48}
-                value={tachGpio}
-                onChange={(e) => setTachGpio(Number(e.target.value))}
-                className="mt-1"
-              />
+              <Input id="fan-tach" type="number" min={0} max={48} value={tachGpio} onChange={(e) => setTachGpio(Number(e.target.value))} className="mt-1" />
             </div>
           </div>
 
@@ -182,15 +125,7 @@ export function FanForm({
             </div>
             <div>
               <Label htmlFor="fan-duty">Duty Cycle ({duty}%)</Label>
-              <Input
-                id="fan-duty"
-                type="range"
-                min={0}
-                max={100}
-                value={duty}
-                onChange={(e) => setDuty(Number(e.target.value))}
-                className="mt-1 accent-primary"
-              />
+              <Input id="fan-duty" type="range" min={0} max={100} value={duty} onChange={(e) => setDuty(Number(e.target.value))} className="mt-1 accent-primary" />
             </div>
           </div>
 
@@ -250,36 +185,18 @@ export function FanForm({
             </div>
             <div>
               <Label htmlFor="fan-group">Group ID</Label>
-              <Input
-                id="fan-group"
-                type="number"
-                min={0}
-                max={255}
-                value={groupId}
-                onChange={(e) => setGroupId(Number(e.target.value))}
-                className="mt-1"
-              />
+              <Input id="fan-group" type="number" min={0} max={255} value={groupId} onChange={(e) => setGroupId(Number(e.target.value))} className="mt-1" />
             </div>
           </div>
 
           {/* Checkboxes */}
           <div className="flex gap-6">
             <label className="flex items-center gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                checked={inverted}
-                onChange={(e) => setInverted(e.target.checked)}
-                className="accent-primary"
-              />
+              <input type="checkbox" checked={inverted} onChange={(e) => setInverted(e.target.checked)} className="accent-primary" />
               Inverted PWM
             </label>
             <label className="flex items-center gap-2 text-sm text-foreground">
-              <input
-                type="checkbox"
-                checked={enabled}
-                onChange={(e) => setEnabled(e.target.checked)}
-                className="accent-primary"
-              />
+              <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} className="accent-primary" />
               Enabled
             </label>
           </div>
@@ -289,9 +206,7 @@ export function FanForm({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">
-              {isEdit ? "Update" : "Create"}
-            </Button>
+            <Button type="submit">{isEdit ? "Update" : "Create"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>

@@ -7,7 +7,7 @@ export const RANGE_MINUTES: Record<TimeRange, number> = {
   "30m": 30,
   "1h": 60,
   "6h": 360,
-  "24h": 1440,
+  "24h": 1440
 };
 
 export const BUCKET_OPTIONS: { value: BucketSize; label: string }[] = [
@@ -16,7 +16,7 @@ export const BUCKET_OPTIONS: { value: BucketSize; label: string }[] = [
   { value: 60, label: "1min" },
   { value: 300, label: "5min" },
   { value: 600, label: "10min" },
-  { value: 900, label: "15min" },
+  { value: 900, label: "15min" }
 ];
 
 export class TimeSeriesBuffer {
@@ -91,24 +91,21 @@ export class TimeSeriesBuffer {
     const points: ChartDataPoint[] = [];
     for (const [ts, bucket] of buckets) {
       const point: ChartDataPoint = {
-        time: formatTime(ts, range),
+        time: formatTime(ts, range)
       };
 
-      const fanSums = new Map<
-        number,
-        { sum: number; count: number; name: string }
-      >();
+      const fanSums = new Map<number, { sum: number; count: number; name: string }>();
       for (const s of bucket) {
         for (const f of s.fans) {
           const prev = fanSums.get(f.id) || {
             sum: 0,
             count: 0,
-            name: f.name,
+            name: f.name
           };
           fanSums.set(f.id, {
             sum: prev.sum + f.rpm,
             count: prev.count + 1,
-            name: f.name,
+            name: f.name
           });
         }
       }
@@ -116,21 +113,18 @@ export class TimeSeriesBuffer {
         point[name] = Math.round(sum / count);
       }
 
-      const tempSums = new Map<
-        number,
-        { sum: number; count: number; name: string }
-      >();
+      const tempSums = new Map<number, { sum: number; count: number; name: string }>();
       for (const s of bucket) {
         for (const t of s.temperatures) {
           const prev = tempSums.get(t.slot) || {
             sum: 0,
             count: 0,
-            name: t.name,
+            name: t.name
           };
           tempSums.set(t.slot, {
             sum: prev.sum + t.temp_c,
             count: prev.count + 1,
-            name: t.name,
+            name: t.name
           });
         }
       }
@@ -183,3 +177,4 @@ function formatTime(ts: number, range: TimeRange): string {
 
   return `${hh}:${mm}:${ss}`;
 }
+

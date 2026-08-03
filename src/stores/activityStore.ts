@@ -21,7 +21,7 @@ export const useActivityStore = create<ActivityStore>((set) => ({
 
   push: (entry) =>
     set((state) => ({
-      entries: [entry, ...state.entries].slice(0, 1000),
+      entries: [entry, ...state.entries].slice(0, 1000)
     })),
 
   loadFromDb: async (deviceId) => {
@@ -42,5 +42,6 @@ export const useActivityStore = create<ActivityStore>((set) => ({
     }
   },
 
-  clear: () => set({ entries: [] }),
+  clear: () => set({ entries: [] })
 }));
+

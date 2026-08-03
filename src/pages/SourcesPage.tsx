@@ -43,12 +43,7 @@ export function SourcesPage() {
     return () => clearInterval(interval);
   }, [fetchSources]);
 
-  async function handleCreate(data: {
-    name: string;
-    source_type: string;
-    gpio?: number;
-    rom_code?: string;
-  }) {
+  async function handleCreate(data: { name: string; source_type: string; gpio?: number; rom_code?: string }) {
     if (activeDeviceId == null) return;
     try {
       const created = await api.createSource(activeDeviceId, data);
@@ -79,12 +74,7 @@ export function SourcesPage() {
     setShowForm(true);
   }
 
-  async function handleUpdate(data: {
-    name: string;
-    source_type: string;
-    gpio?: number;
-    rom_code?: string;
-  }) {
+  async function handleUpdate(data: { name: string; source_type: string; gpio?: number; rom_code?: string }) {
     if (activeDeviceId == null || editingSource == null) return;
 
     // Check if only name changed (PUT /sources/{id} only supports name)
@@ -97,11 +87,7 @@ export function SourcesPage() {
       // Only name changed — use updateSource
       try {
         await api.updateSource(activeDeviceId, editingSource.slot, data.name);
-        setSources((prev) =>
-          prev.map((s) =>
-            s.slot === editingSource.slot ? { ...s, name: data.name } : s
-          )
-        );
+        setSources((prev) => prev.map((s) => (s.slot === editingSource.slot ? { ...s, name: data.name } : s)));
         showToast("Source updated", "success");
         logUserAction(activeDeviceId, "source", `Source "${data.name}" renamed`, `slot=${editingSource.slot}`);
         closeForm();
@@ -113,9 +99,7 @@ export function SourcesPage() {
       try {
         await api.deleteSource(activeDeviceId, editingSource.slot);
         const created = await api.createSource(activeDeviceId, data);
-        setSources((prev) =>
-          prev.map((s) => (s.slot === editingSource.slot ? created : s))
-        );
+        setSources((prev) => prev.map((s) => (s.slot === editingSource.slot ? created : s)));
         showToast("Source recreated", "success");
         logUserAction(activeDeviceId, "source", `Source "${data.name}" recreated (${data.source_type})`, `slot=${editingSource.slot}`);
         closeForm();
@@ -125,12 +109,7 @@ export function SourcesPage() {
     }
   }
 
-  function handleFormSubmit(data: {
-    name: string;
-    source_type: string;
-    gpio?: number;
-    rom_code?: string;
-  }) {
+  function handleFormSubmit(data: { name: string; source_type: string; gpio?: number; rom_code?: string }) {
     if (editingSource) {
       handleUpdate(data);
     } else {
@@ -142,9 +121,7 @@ export function SourcesPage() {
     if (activeDeviceId == null) return;
     try {
       await api.updateManualTemp(activeDeviceId, source.slot, tempC);
-      setSources((prev) =>
-        prev.map((s) => (s.slot === source.slot ? { ...s, temp_c: tempC } : s))
-      );
+      setSources((prev) => prev.map((s) => (s.slot === source.slot ? { ...s, temp_c: tempC } : s)));
       showToast("Temperature updated", "success");
       logUserAction(activeDeviceId, "source", `Source "${source.name}" temp set to ${tempC}°C`, `slot=${source.slot}`);
     } catch (err) {
@@ -163,7 +140,7 @@ export function SourcesPage() {
       .createSource(activeDeviceId, {
         name: `DS18B20 ${device.index}`,
         source_type: "DS18B20",
-        rom_code: device.rom_code,
+        rom_code: device.rom_code
       })
       .then((created) => {
         setSources((prev) => [...prev, created]);
@@ -207,13 +184,7 @@ export function SourcesPage() {
       </div>
 
       {/* Source list */}
-      <SourceList
-        sources={sources}
-        onDelete={handleDelete}
-        onEdit={handleEdit}
-        onCreateFirst={() => setShowForm(true)}
-        onSetManualTemp={handleSetManualTemp}
-      />
+      <SourceList sources={sources} onDelete={handleDelete} onEdit={handleEdit} onCreateFirst={() => setShowForm(true)} onSetManualTemp={handleSetManualTemp} />
 
       {/* Form dialog */}
       <SourceForm
@@ -226,13 +197,8 @@ export function SourcesPage() {
       />
 
       {/* Scanner modal */}
-      {showScanner && activeDeviceId != null && (
-        <Ds18b20Scanner
-          deviceId={activeDeviceId}
-          onAssign={handleAssignFromScanner}
-          onClose={() => setShowScanner(false)}
-        />
-      )}
+      {activeDeviceId != null && <Ds18b20Scanner open={showScanner} onOpenChange={setShowScanner} deviceId={activeDeviceId} onAssign={handleAssignFromScanner} />}
     </div>
   );
 }
+

@@ -47,7 +47,7 @@ export const useChartStore = create<ChartStore>((set, get) => ({
   restore: (samples: FanSample[]) => {
     get().buffer.restore(samples);
     get().updateChart();
-  },
+  }
 }));
 
 let unsubscribe: (() => void) | null = null;
@@ -72,3 +72,4 @@ export function clearChartBuffer(): void {
   useChartStore.getState().buffer.clear();
   useChartStore.getState().updateChart();
 }
+

@@ -1,6 +1,6 @@
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Duration, Utc};
+use diesel::upsert::excluded;
 use diesel::prelude::*;
-use diesel::sql_types::{Double, Integer, Text};
 use serde::{Deserialize, Serialize};
 
 use crate::models::*;
@@ -96,8 +96,8 @@ pub fn insert_activity_with_details(
         .values(&NewActivityLog {
             device_id: dev_id as i32,
             event_type: event_type_str.to_string(),
-            message: message_str.to_string(),
-            details: details_str.to_string(),
+            message: Some(message_str.to_string()).filter(|s| !s.is_empty()),
+            details: Some(details_str.to_string()).filter(|s| !s.is_empty()),
             ts: now,
         })
         .execute(conn)
@@ -178,10 +178,10 @@ pub fn get_recent_fan_samples(
     dev_id: i64,
     minutes: i64,
 ) -> QueryResult<Vec<FanSample>> {
-    let since_param = format!("datetime('now', '-{} minutes')", minutes);
+    let since = (Utc::now() - Duration::minutes(minutes)).to_rfc3339();
     let rows = fan_samples::table
         .filter(fan_samples::device_id.eq(dev_id as i32))
-        .filter(fan_samples::ts.ge(since_param))
+        .filter(fan_samples::ts.ge(since))
         .order(fan_samples::ts.asc())
         .load::<FanSampleRow>(conn)?;
 
@@ -228,10 +228,10 @@ pub fn get_recent_temp_samples(
     dev_id: i64,
     minutes: i64,
 ) -> QueryResult<Vec<TempSample>> {
-    let since_param = format!("datetime('now', '-{} minutes')", minutes);
+    let since = (Utc::now() - Duration::minutes(minutes)).to_rfc3339();
     let rows = temp_samples::table
         .filter(temp_samples::device_id.eq(dev_id as i32))
-        .filter(temp_samples::ts.ge(since_param))
+        .filter(temp_samples::ts.ge(since))
         .order(temp_samples::ts.asc())
         .load::<TempSampleRow>(conn)?;
 
@@ -317,12 +317,34 @@ pub fn upsert_device(
     port_val: i32,
 ) -> QueryResult<usize> {
     let now = Utc::now().to_rfc3339();
-    diesel::sql_query(format!(
-        "INSERT INTO devices (hostname, ip_address, port, last_seen) VALUES ('{}', '{}', {}, '{}')
-         ON CONFLICT(hostname) DO UPDATE SET ip_address = '{}', port = {}, last_seen = '{}'",
-        hostname_str, ip_str, port_val, now, ip_str, port_val, now
-    ))
-    .execute(conn)
+    diesel::insert_into(devices::table)
+        .values(&NewDevice {
+            hostname: hostname_str,
+            ip_address: ip_str,
+            port: port_val,
+            last_seen: &now,
+        })
+        .on_conflict(devices::hostname)
+        .do_update()
+        .set((
+            devices::ip_address.eq(excluded(devices::ip_address)),
+            devices::port.eq(excluded(devices::port)),
+            devices::last_seen.eq(excluded(devices::last_seen)),
+        ))
+        .execute(conn)
+}
+
+/// Find a device by hostname. Returns the existing device ID if found.
+pub fn find_device_by_hostname(
+    conn: &mut SqliteConnection,
+    hostname_str: &str,
+) -> QueryResult<Option<i32>> {
+    let result = devices::table
+        .filter(devices::hostname.eq(hostname_str))
+        .select(devices::id)
+        .first::<i32>(conn)
+        .optional()?;
+    Ok(result)
 }
 
 pub fn get_all_devices(conn: &mut SqliteConnection) -> QueryResult<Vec<DeviceInfo>> {

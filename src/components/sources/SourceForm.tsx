@@ -3,48 +3,22 @@ import type { SourceState } from "../../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const SOURCE_TYPE_OPTIONS = ["DS18B20", "Manual", "NTC"] as const;
 
 interface SourceFormProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: {
-    name: string;
-    source_type: string;
-    gpio?: number;
-    rom_code?: string;
-  }) => void;
+  onSubmit: (data: { name: string; source_type: string; gpio?: number; rom_code?: string }) => void;
   initialData?: SourceState | null;
 }
 
-export function SourceForm({
-  open,
-  onOpenChange,
-  onSubmit,
-  initialData,
-}: SourceFormProps) {
+export function SourceForm({ open, onOpenChange, onSubmit, initialData }: SourceFormProps) {
   const [name, setName] = useState(initialData?.name ?? "");
-  const [sourceType, setSourceType] = useState<string>(
-    initialData?.source_type ?? SOURCE_TYPE_OPTIONS[0]
-  );
-  const [gpio, setGpio] = useState<string>(
-    initialData?.gpio != null && initialData.gpio < 255 ? String(initialData.gpio) : ""
-  );
+  const [sourceType, setSourceType] = useState<string>(initialData?.source_type ?? SOURCE_TYPE_OPTIONS[0]);
+  const [gpio, setGpio] = useState<string>(initialData?.gpio != null && initialData.gpio < 255 ? String(initialData.gpio) : "");
   const [romCode, setRomCode] = useState<string>(initialData?.rom_code ?? "");
 
   const isEdit = initialData != null;
@@ -71,7 +45,7 @@ export function SourceForm({
       rom_code?: string;
     } = {
       name: name.trim(),
-      source_type: sourceType,
+      source_type: sourceType
     };
     if (showGpio && gpio.trim()) {
       data.gpio = Number(gpio);
@@ -93,15 +67,7 @@ export function SourceForm({
           {/* Name */}
           <div>
             <Label htmlFor="source-name">Name</Label>
-            <Input
-              id="source-name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. CPU Temp"
-              required
-              autoFocus
-              className="mt-1"
-            />
+            <Input id="source-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. CPU Temp" required autoFocus className="mt-1" />
           </div>
 
           {/* Type */}
@@ -125,14 +91,7 @@ export function SourceForm({
           {showGpio && (
             <div>
               <Label htmlFor="source-gpio">GPIO</Label>
-              <Input
-                id="source-gpio"
-                type="number"
-                value={gpio}
-                onChange={(e) => setGpio(e.target.value)}
-                placeholder="e.g. 4"
-                className="mt-1"
-              />
+              <Input id="source-gpio" type="number" value={gpio} onChange={(e) => setGpio(e.target.value)} placeholder="e.g. 4" className="mt-1" />
             </div>
           )}
 
@@ -140,13 +99,7 @@ export function SourceForm({
           {showRomCode && (
             <div>
               <Label htmlFor="source-rom">ROM Code</Label>
-              <Input
-                id="source-rom"
-                value={romCode}
-                onChange={(e) => setRomCode(e.target.value)}
-                placeholder="e.g. 28FF1234567890AB"
-                className="mt-1 font-mono"
-              />
+              <Input id="source-rom" value={romCode} onChange={(e) => setRomCode(e.target.value)} placeholder="e.g. 28FF1234567890AB" className="mt-1 font-mono" />
             </div>
           )}
 
@@ -155,12 +108,11 @@ export function SourceForm({
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit">
-              {isEdit ? "Update" : "Create"}
-            </Button>
+            <Button type="submit">{isEdit ? "Update" : "Create"}</Button>
           </DialogFooter>
         </form>
       </DialogContent>
     </Dialog>
   );
 }
+

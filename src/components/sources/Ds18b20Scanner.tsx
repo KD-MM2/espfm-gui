@@ -2,18 +2,19 @@ import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { api, type Ds18b20Device } from "../../lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 interface Ds18b20ScannerProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   deviceId: number;
   onAssign: (device: Ds18b20Device) => void;
-  onClose: () => void;
 }
 
-export function Ds18b20Scanner({
-  deviceId,
-  onAssign,
-  onClose,
-}: Ds18b20ScannerProps) {
+export function Ds18b20Scanner({ open, onOpenChange, deviceId, onAssign }: Ds18b20ScannerProps) {
   const { showToast } = useToast();
   const [devices, setDevices] = useState<Ds18b20Device[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -53,107 +54,59 @@ export function Ds18b20Scanner({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg rounded-lg border border-border bg-card p-5 shadow-lg"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h2 className="text-base font-semibold text-foreground">
-          DS18B20 Scanner
-        </h2>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>DS18B20 Scanner</DialogTitle>
+        </DialogHeader>
 
-        <div className="mt-4 space-y-3">
+        <div className="space-y-3">
           {/* Bus GPIO configuration */}
           <div className="flex items-end gap-2">
             <div className="flex-1">
-              <label
-                htmlFor="ds18b20-bus-gpio"
-                className="mb-1 block text-xs font-medium text-muted-foreground"
-              >
-                Bus GPIO
-              </label>
-              <input
-                id="ds18b20-bus-gpio"
-                type="number"
-                min="0"
-                max="48"
-                value={busGpio}
-                onChange={(e) => setBusGpio(e.target.value)}
-                placeholder="e.g. 4"
-                className="w-full rounded-md border border-border bg-card px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-foreground"
-              />
+              <Label htmlFor="ds18b20-bus-gpio">Bus GPIO</Label>
+              <Input id="ds18b20-bus-gpio" type="number" min={0} max={48} value={busGpio} onChange={(e) => setBusGpio(e.target.value)} placeholder="e.g. 4" className="mt-1" />
             </div>
-            <button
-              type="button"
-              onClick={handleConfigureGpio}
-              disabled={configuring || !busGpio.trim()}
-              className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
-            >
+            <Button variant="outline" onClick={handleConfigureGpio} disabled={configuring || !busGpio.trim()}>
               {configuring ? "Setting..." : "Configure"}
-            </button>
+            </Button>
           </div>
 
           {/* Scan button */}
-          <button
-            type="button"
-            onClick={handleScan}
-            disabled={scanning}
-            className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-          >
+          <Button onClick={handleScan} disabled={scanning}>
             {scanning && <Loader2 size={16} className="animate-spin" />}
             {scanning ? "Scanning..." : "Scan Bus"}
-          </button>
+          </Button>
         </div>
 
         {/* Results */}
-        {scanned && !scanning && devices.length === 0 && (
-          <p className="mt-4 text-sm text-muted-foreground">No devices found.</p>
-        )}
+        {scanned && !scanning && devices.length === 0 && <p className="text-sm text-muted-foreground">No devices found.</p>}
 
         {devices.length > 0 && (
-          <div className="mt-4 space-y-2">
+          <div className="space-y-2">
             {devices.map((device) => (
-              <div
-                key={device.rom_code}
-                className="flex items-center justify-between rounded-lg border border-border bg-card p-3"
-              >
+              <div key={device.rom_code} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
                 <div>
-                  <div className="text-xs text-muted-foreground">
-                    Device {device.index}
-                  </div>
-                  <div className="mt-0.5 font-mono text-sm text-foreground">
-                    {device.rom_code}
-                  </div>
-                  <div className="mt-0.5 text-xs text-muted-foreground">
-                    {device.temp_c.toFixed(1)} °C
-                  </div>
+                  <div className="text-xs text-muted-foreground">Device {device.index}</div>
+                  <div className="mt-0.5 font-mono text-sm text-foreground">{device.rom_code}</div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">{device.temp_c.toFixed(1)} °C</div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => onAssign(device)}
-                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                >
+                <Button size="sm" onClick={() => onAssign(device)}>
                   Assign
-                </button>
+                </Button>
               </div>
             ))}
           </div>
         )}
 
         {/* Close */}
-        <div className="mt-5 flex justify-end">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-          >
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
             Close
-          </button>
-        </div>
-      </div>
-    </div>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
+

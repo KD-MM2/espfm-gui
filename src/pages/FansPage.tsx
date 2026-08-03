@@ -36,9 +36,18 @@ export function FansPage() {
 
   useEffect(() => {
     if (activeDeviceId == null) return;
-    api.getSources(activeDeviceId).then(setSources).catch(() => {});
-    api.getCurves(activeDeviceId).then(setCurves).catch(() => {});
-    api.getSchedules(activeDeviceId).then(setSchedules).catch(() => {});
+    api
+      .getSources(activeDeviceId)
+      .then(setSources)
+      .catch(() => {});
+    api
+      .getCurves(activeDeviceId)
+      .then(setCurves)
+      .catch(() => {});
+    api
+      .getSchedules(activeDeviceId)
+      .then(setSchedules)
+      .catch(() => {});
   }, [activeDeviceId]);
 
   async function handleCreate(data: FanFormData) {
@@ -47,17 +56,9 @@ export function FansPage() {
       const created = await api.createFan(activeDeviceId, {
         name: data.name,
         pwm_gpio: data.pwm_gpio,
-        tach_gpio: data.tach_gpio,
+        tach_gpio: data.tach_gpio
       });
-      const needsUpdate =
-        data.mode !== "manual" ||
-        data.duty !== 50 ||
-        data.inverted ||
-        !data.enabled ||
-        data.source_id !== 255 ||
-        data.curve_id !== 255 ||
-        data.schedule_id !== 255 ||
-        data.group_id !== 0;
+      const needsUpdate = data.mode !== "manual" || data.duty !== 50 || data.inverted || !data.enabled || data.source_id !== 255 || data.curve_id !== 255 || data.schedule_id !== 255 || data.group_id !== 0;
 
       let final = created;
       if (needsUpdate) {
@@ -69,7 +70,7 @@ export function FansPage() {
           source_id: data.source_id !== 255 ? data.source_id : undefined,
           curve_id: data.curve_id !== 255 ? data.curve_id : undefined,
           schedule_id: data.schedule_id !== 255 ? data.schedule_id : undefined,
-          group_id: data.group_id !== 0 ? data.group_id : undefined,
+          group_id: data.group_id !== 0 ? data.group_id : undefined
         });
       }
       setFans((prev) => [...prev, final]);
@@ -95,11 +96,9 @@ export function FansPage() {
         schedule_id: data.schedule_id !== 255 ? data.schedule_id : undefined,
         group_id: data.group_id !== 0 ? data.group_id : undefined,
         pwm_gpio: data.pwm_gpio,
-        tach_gpio: data.tach_gpio,
+        tach_gpio: data.tach_gpio
       });
-      setFans((prev) =>
-        prev.map((f) => (f.slot === updated.slot ? updated : f))
-      );
+      setFans((prev) => prev.map((f) => (f.slot === updated.slot ? updated : f)));
       showToast("Fan updated", "success");
       logUserAction(activeDeviceId, "fan", `Fan "${updated.name}" updated`, `slot=${updated.slot}`);
       closeForm();
@@ -112,11 +111,9 @@ export function FansPage() {
     if (activeDeviceId == null) return;
     try {
       const updated = await api.updateFan(activeDeviceId, fan.slot, {
-        enabled: !fan.enabled,
+        enabled: !fan.enabled
       });
-      setFans((prev) =>
-        prev.map((f) => (f.slot === updated.slot ? updated : f))
-      );
+      setFans((prev) => prev.map((f) => (f.slot === updated.slot ? updated : f)));
       showToast(fan.enabled ? "Fan disabled" : "Fan enabled", "success");
       logUserAction(activeDeviceId, "fan", `Fan "${fan.name}" ${!fan.enabled ? "enabled" : "disabled"}`, `slot=${fan.slot}`);
     } catch (err) {
@@ -178,12 +175,7 @@ export function FansPage() {
       </div>
 
       {/* Fan list */}
-      <FanList
-        fans={fans}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onToggle={handleToggle}
-      />
+      <FanList fans={fans} onEdit={handleEdit} onDelete={handleDelete} onToggle={handleToggle} />
 
       {/* Form dialog */}
       <FanForm
@@ -200,3 +192,4 @@ export function FansPage() {
     </div>
   );
 }
+

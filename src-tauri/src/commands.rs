@@ -202,11 +202,26 @@ pub async fn connect_device(
         .await
         .map_err(|e| format!("Failed to get device info: {e}"))?;
 
-    let mut next_id = state.next_device_id.lock().await;
-    let id = *next_id;
-    *next_id += 1;
-
     let hostname = system_info.hostname.clone();
+
+    // Check if this device already exists in SQLite (survives webview refresh).
+    // If found, reuse its ID so historical data (logs, samples) stays associated.
+    let existing_id = espfm_store::samples::find_device_by_hostname(
+        &mut state.db.conn(),
+        &hostname,
+    )
+    .map_err(|e| format!("Device lookup failed: {e}"))?;
+
+    let id = match existing_id {
+        Some(sqlite_id) => sqlite_id as u32,
+        None => {
+            let mut next_id = state.next_device_id.lock().await;
+            let new_id = *next_id;
+            *next_id += 1;
+            new_id
+        }
+    };
+
     let conn = crate::state::DeviceConnection {
         client,
         hostname: hostname.clone(),

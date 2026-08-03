@@ -53,7 +53,7 @@ export class Collector {
         name: f.name || `Fan ${f.slot}`,
         rpm: f.rpm,
         duty: f.duty_pct,
-        enabled: f.enabled,
+        enabled: f.enabled
       }));
     } catch (e) {
       console.warn("Collector: fetchFans failed:", e);
@@ -67,7 +67,7 @@ export class Collector {
         slot: s.slot,
         name: s.name || `Source ${s.slot}`,
         temp_c: s.temp_c,
-        source_type: s.source_type,
+        source_type: s.source_type
       }));
     } catch (e) {
       console.warn("Collector: fetchSources failed:", e);
@@ -80,7 +80,7 @@ export class Collector {
       this.latestSystem = {
         uptime_secs: info.uptime_secs,
         heap_free: info.heap_free,
-        version: info.version,
+        version: info.version
       };
     } catch (e) {
       console.warn("Collector: fetchSystemInfo failed:", e);
@@ -92,7 +92,7 @@ export class Collector {
       timestamp: Date.now(),
       fans: this.latestFans,
       temperatures: this.latestTemps,
-      system: this.latestSystem,
+      system: this.latestSystem
     };
     eventBus.publish(sample);
   }
@@ -100,10 +100,7 @@ export class Collector {
 
 /** Load historical samples from SQLite. Returns sorted FanSample[].
  *  Does NOT publish to EventBus — caller should restore() into store directly. */
-export async function loadHistory(
-  deviceId: number,
-  minutes: number
-): Promise<FanSample[]> {
+export async function loadHistory(deviceId: number, minutes: number): Promise<FanSample[]> {
   try {
     const fanSamples = await api.getRecentFanSamples(deviceId, minutes);
     const tempSamples = await api.getRecentTempSamples(deviceId, minutes);
@@ -119,65 +116,52 @@ export async function loadHistory(
     for (const s of fanSamples) {
       const ts = new Date(s.ts).getTime();
       const bucketKey = Math.floor(ts / 60000) * 60000;
-      if (!buckets.has(bucketKey))
-        buckets.set(bucketKey, { fans: new Map(), temps: new Map() });
+      if (!buckets.has(bucketKey)) buckets.set(bucketKey, { fans: new Map(), temps: new Map() });
       const bucket = buckets.get(bucketKey)!;
       const prev = bucket.fans.get(s.fan_id) || {
         sum: 0,
         count: 0,
-        duty: s.duty,
+        duty: s.duty
       };
       bucket.fans.set(s.fan_id, {
         sum: prev.sum + s.rpm,
         count: prev.count + 1,
-        duty: s.duty,
+        duty: s.duty
       });
     }
 
     for (const s of tempSamples) {
       const ts = new Date(s.ts).getTime();
       const bucketKey = Math.floor(ts / 60000) * 60000;
-      if (!buckets.has(bucketKey))
-        buckets.set(bucketKey, { fans: new Map(), temps: new Map() });
+      if (!buckets.has(bucketKey)) buckets.set(bucketKey, { fans: new Map(), temps: new Map() });
       const bucket = buckets.get(bucketKey)!;
       const prev = bucket.temps.get(s.source_id) || { sum: 0, count: 0 };
       bucket.temps.set(s.source_id, {
         sum: prev.sum + s.temp_c,
-        count: prev.count + 1,
+        count: prev.count + 1
       });
     }
 
-    const [fanList, sourceList] = await Promise.all([
-      api.getFans(deviceId),
-      api.getSources(deviceId),
-    ]);
-    const fanNames = new Map(
-      fanList.map((f) => [f.slot, f.name || `Fan ${f.slot}`])
-    );
-    const sourceNames = new Map(
-      sourceList.map((s) => [s.slot, s.name || `Source ${s.slot}`])
-    );
+    const [fanList, sourceList] = await Promise.all([api.getFans(deviceId), api.getSources(deviceId)]);
+    const fanNames = new Map(fanList.map((f) => [f.slot, f.name || `Fan ${f.slot}`]));
+    const sourceNames = new Map(sourceList.map((s) => [s.slot, s.name || `Source ${s.slot}`]));
 
     const samples: FanSample[] = [];
     for (const [ts, bucket] of buckets) {
-      const fans = Array.from(bucket.fans.entries()).map(
-        ([id, { sum, count, duty }]) => ({
-          id,
-          name: fanNames.get(id) || `Fan ${id}`,
-          rpm: Math.round(sum / count),
-          duty,
-          enabled: true,
-        })
-      );
+      const fans = Array.from(bucket.fans.entries()).map(([id, { sum, count, duty }]) => ({
+        id,
+        name: fanNames.get(id) || `Fan ${id}`,
+        rpm: Math.round(sum / count),
+        duty,
+        enabled: true
+      }));
 
-      const temperatures = Array.from(bucket.temps.entries()).map(
-        ([slot, { sum, count }]) => ({
-          slot,
-          name: sourceNames.get(slot) || `Source ${slot}`,
-          temp_c: Math.round((sum / count) * 10) / 10,
-          source_type: "unknown",
-        })
-      );
+      const temperatures = Array.from(bucket.temps.entries()).map(([slot, { sum, count }]) => ({
+        slot,
+        name: sourceNames.get(slot) || `Source ${slot}`,
+        temp_c: Math.round((sum / count) * 10) / 10,
+        source_type: "unknown"
+      }));
 
       samples.push({ timestamp: ts, fans, temperatures, system: null });
     }
@@ -189,3 +173,4 @@ export async function loadHistory(
     return [];
   }
 }
+

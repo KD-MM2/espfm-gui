@@ -4,6 +4,7 @@ import { api, type ScheduleState, type FanState } from "../lib/api";
 import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
 import { ScheduleList } from "../components/schedules/ScheduleList";
 import { ScheduleForm } from "../components/schedules/ScheduleForm";
 
@@ -15,9 +16,7 @@ export function SchedulesPage() {
   const [schedules, setSchedules] = useState<ScheduleState[]>([]);
   const [fans, setFans] = useState<FanState[]>([]);
   const [showForm, setShowForm] = useState(false);
-  const [editingSchedule, setEditingSchedule] = useState<ScheduleState | null>(
-    null
-  );
+  const [editingSchedule, setEditingSchedule] = useState<ScheduleState | null>(null);
 
   const fetchSchedules = useCallback(async () => {
     if (activeDeviceId == null) return;
@@ -44,13 +43,7 @@ export function SchedulesPage() {
     fetchFans();
   }, [fetchSchedules, fetchFans]);
 
-  async function handleCreate(data: {
-    fan_id: number;
-    duty: number;
-    start_min: number;
-    end_min: number;
-    enabled: boolean;
-  }) {
+  async function handleCreate(data: { fan_id: number; duty: number; start_min: number; end_min: number; enabled: boolean }) {
     if (activeDeviceId == null) return;
     try {
       const created = await api.createSchedule(activeDeviceId, data);
@@ -63,29 +56,17 @@ export function SchedulesPage() {
     }
   }
 
-  async function handleUpdate(data: {
-    fan_id: number;
-    duty: number;
-    start_min: number;
-    end_min: number;
-    enabled: boolean;
-  }) {
+  async function handleUpdate(data: { fan_id: number; duty: number; start_min: number; end_min: number; enabled: boolean }) {
     if (activeDeviceId == null || editingSchedule == null) return;
     try {
-      const updated = await api.updateSchedule(
-        activeDeviceId,
-        editingSchedule.slot,
-        {
-          fan_id: data.fan_id,
-          duty: data.duty,
-          start_min: data.start_min,
-          end_min: data.end_min,
-          enabled: data.enabled,
-        }
-      );
-      setSchedules((prev) =>
-        prev.map((s) => (s.slot === updated.slot ? updated : s))
-      );
+      const updated = await api.updateSchedule(activeDeviceId, editingSchedule.slot, {
+        fan_id: data.fan_id,
+        duty: data.duty,
+        start_min: data.start_min,
+        end_min: data.end_min,
+        enabled: data.enabled
+      });
+      setSchedules((prev) => prev.map((s) => (s.slot === updated.slot ? updated : s)));
       showToast("Schedule updated", "success");
       logUserAction(activeDeviceId, "schedule", `Schedule updated (fan ${data.fan_id}, ${data.duty}%)`, `slot=${updated.slot}`);
       closeForm();
@@ -110,14 +91,8 @@ export function SchedulesPage() {
   async function handleToggle(schedule: ScheduleState) {
     if (activeDeviceId == null) return;
     try {
-      const updated = await api.updateSchedule(
-        activeDeviceId,
-        schedule.slot,
-        { enabled: !schedule.enabled }
-      );
-      setSchedules((prev) =>
-        prev.map((s) => (s.slot === updated.slot ? updated : s))
-      );
+      const updated = await api.updateSchedule(activeDeviceId, schedule.slot, { enabled: !schedule.enabled });
+      setSchedules((prev) => prev.map((s) => (s.slot === updated.slot ? updated : s)));
       showToast(schedule.enabled ? "Schedule disabled" : "Schedule enabled", "success");
       logUserAction(activeDeviceId, "schedule", `Schedule ${!schedule.enabled ? "enabled" : "disabled"} (fan ${schedule.fan_id})`, `slot=${schedule.slot}`);
     } catch (err) {
@@ -130,13 +105,7 @@ export function SchedulesPage() {
     setShowForm(true);
   }
 
-  function handleFormSubmit(data: {
-    fan_id: number;
-    duty: number;
-    start_min: number;
-    end_min: number;
-    enabled: boolean;
-  }) {
+  function handleFormSubmit(data: { fan_id: number; duty: number; start_min: number; end_min: number; enabled: boolean }) {
     if (editingSchedule) {
       handleUpdate(data);
     } else {
@@ -164,35 +133,26 @@ export function SchedulesPage() {
             {schedules.length} of {MAX_SCHEDULE_SLOTS} slots used
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          disabled={schedules.length >= MAX_SCHEDULE_SLOTS}
-          className="flex items-center gap-1.5 rounded-md bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
-        >
+        <Button onClick={openCreate} disabled={schedules.length >= MAX_SCHEDULE_SLOTS}>
           <Plus size={16} />
           Create Schedule
-        </button>
+        </Button>
       </div>
 
       {/* Schedule list */}
-      <ScheduleList
-        schedules={schedules}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
-        onToggle={handleToggle}
-        onCreateFirst={openCreate}
-      />
+      <ScheduleList schedules={schedules} onEdit={handleEdit} onDelete={handleDelete} onToggle={handleToggle} onCreateFirst={openCreate} />
 
       {/* Form modal */}
-      {showForm && (
-        <ScheduleForm
-          onSubmit={handleFormSubmit}
-          onCancel={closeForm}
-          initialData={editingSchedule}
-          fans={fans}
-        />
-      )}
+      <ScheduleForm
+        open={showForm}
+        onOpenChange={(open) => {
+          if (!open) closeForm();
+        }}
+        onSubmit={handleFormSubmit}
+        initialData={editingSchedule}
+        fans={fans}
+      />
     </div>
   );
 }
+

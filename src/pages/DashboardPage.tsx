@@ -1,21 +1,16 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FanTempChart } from "../components/dashboard/FanTempChart";
 import { SystemInfoCard } from "../components/dashboard/SystemInfoCard";
 import { ActivityLog } from "../components/dashboard/ActivityLog";
-import {
-  api,
-  type SystemInfo,
-  type SourceState,
-  type CurveState,
-  type ScheduleState,
-  type WifiStatus,
-} from "../lib/api";
+import { api, type SystemInfo, type SourceState, type CurveState, type ScheduleState, type WifiStatus } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useChartStore } from "../stores/chartStore";
 import { useActivityStore } from "../stores/activityStore";
 import { startMonitoringSession, changeTimeRange } from "../lib/monitoringSession";
 import { RANGE_MINUTES, type TimeRange } from "../lib/timeSeriesBuffer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export function DashboardPage() {
   const navigate = useNavigate();
@@ -32,6 +27,11 @@ export function DashboardPage() {
 
   const activityEntries = useActivityStore((s) => s.entries);
 
+  const filteredEntries = useMemo(() => {
+    const cutoff = Date.now() - RANGE_MINUTES[timeRange] * 60 * 1000;
+    return activityEntries.filter((e) => new Date(e.ts).getTime() >= cutoff);
+  }, [activityEntries, timeRange]);
+
   const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
   const [sources, setSources] = useState<SourceState[]>([]);
   const [curves, setCurves] = useState<CurveState[]>([]);
@@ -46,12 +46,9 @@ export function DashboardPage() {
   }, [activeDeviceId]);
 
   // Handle time range change
-  const handleTimeRangeChange = useCallback(
-    (range: TimeRange) => {
-      void changeTimeRange(range);
-    },
-    []
-  );
+  const handleTimeRangeChange = useCallback((range: TimeRange) => {
+    void changeTimeRange(range);
+  }, []);
 
   // System info polling
   const fetchSystemInfo = useCallback(async () => {
@@ -68,12 +65,7 @@ export function DashboardPage() {
   const fetchAdditionalData = useCallback(async () => {
     if (!activeDeviceId) return;
     try {
-      const [src, crv, sch, wifi] = await Promise.all([
-        api.getSources(activeDeviceId),
-        api.getCurves(activeDeviceId),
-        api.getSchedules(activeDeviceId),
-        api.wifiStatus(activeDeviceId),
-      ]);
+      const [src, crv, sch, wifi] = await Promise.all([api.getSources(activeDeviceId), api.getCurves(activeDeviceId), api.getSchedules(activeDeviceId), api.wifiStatus(activeDeviceId)]);
       setSources(src);
       setCurves(crv);
       setSchedules(sch);
@@ -110,20 +102,14 @@ export function DashboardPage() {
   }
 
   // Determine system status
-  const sysStatus: "healthy" | "warning" | "error" = systemInfo
-    ? systemInfo.heap_free < 20000
-      ? "warning"
-      : "healthy"
-    : "healthy";
+  const sysStatus: "healthy" | "warning" | "error" = systemInfo ? (systemInfo.heap_free < 20000 ? "warning" : "healthy") : "healthy";
 
   if (!activeDeviceId) {
     return (
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <p className="text-sm text-muted-foreground">No device connected</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Go to Devices to connect to a device
-          </p>
+          <p className="mt-1 text-xs text-muted-foreground">Go to Devices to connect to a device</p>
         </div>
       </div>
     );
@@ -135,8 +121,7 @@ export function DashboardPage() {
       <div className="mb-4 shrink-0">
         <h1 className="text-xl font-semibold text-foreground">Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          {activeDevice?.hostname || "Unknown"} &middot;{" "}
-          {activeDevice?.ipAddress || ""}
+          {activeDevice?.hostname || "Unknown"} &middot; {activeDevice?.ipAddress || ""}
         </p>
       </div>
 
@@ -145,48 +130,21 @@ export function DashboardPage() {
         {/* Chart — left column */}
         <div className="flex min-h-0 flex-col rounded-lg border border-border bg-card p-4">
           {fanNames.length > 0 ? (
-            <FanTempChart
-              data={chartData}
-              fanNames={fanNames}
-              tempNames={tempNames}
-              timeRange={timeRange}
-              bucketSize={bucketSize}
-              onTimeRangeChange={handleTimeRangeChange}
-              onBucketSizeChange={setBucketSize}
-            />
+            <FanTempChart data={chartData} fanNames={fanNames} tempNames={tempNames} timeRange={timeRange} bucketSize={bucketSize} onTimeRangeChange={handleTimeRangeChange} onBucketSizeChange={setBucketSize} />
           ) : (
             <div className="flex flex-1 items-center justify-center">
-              <p className="text-sm text-muted-foreground">
-                No fans configured — create a fan to see data
-              </p>
+              <p className="text-sm text-muted-foreground">No fans configured — create a fan to see data</p>
             </div>
           )}
         </div>
 
         {/* Right column: system info + activity log */}
         <div className="flex min-h-0 flex-col gap-4">
-          <SystemInfoCard
-            uptime={
-              systemInfo ? formatUptime(systemInfo.uptime_secs) : "—"
-            }
-            heapFree={
-              systemInfo
-                ? `${(systemInfo.heap_free / 1024).toFixed(0)} KB`
-                : "—"
-            }
-            version={systemInfo?.version || "—"}
-            status={sysStatus}
-          />
+          <SystemInfoCard uptime={systemInfo ? formatUptime(systemInfo.uptime_secs) : "—"} heapFree={systemInfo ? `${(systemInfo.heap_free / 1024).toFixed(0)} KB` : "—"} version={systemInfo?.version || "—"} status={sysStatus} />
           <div className="flex min-h-0 flex-1 flex-col">
             <ActivityLog
-              entries={activityEntries.slice(0, 7).map((e) => {
-                const KNOWN_TYPES = ["fan", "temp", "schedule", "error", "system", "source", "curve"] as const;
-                const type = (KNOWN_TYPES as readonly string[]).includes(e.event_type)
-                  ? e.event_type as typeof KNOWN_TYPES[number]
-                  : "system";
-                return { id: String(e.id), type, message: e.message, time: e.ts };
-              })}
-              maxItems={7}
+              entries={filteredEntries}
+              maxItems={999}
               onShowAll={() => navigate("/logs")}
               totalCount={activityEntries.length}
             />
@@ -197,149 +155,117 @@ export function DashboardPage() {
       {/* Bottom row: sources, curves, schedules, WiFi */}
       <div className="mt-4 shrink-0 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Sources */}
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">
-            Sources
-            {sources.length > 0 && (
-              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                ({sources.length})
-              </span>
-            )}
-          </h2>
-          {sources.length > 0 ? (
-            <div className="space-y-2">
-              {sources.map((s) => (
-                <div
-                  key={s.slot}
-                  className="flex items-center justify-between"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium text-foreground">
-                      {s.name}
+        <Card className="gap-2 py-0">
+          <CardHeader className="px-4 pt-4 pb-0">
+            <CardTitle className="text-sm">
+              Sources
+              {sources.length > 0 && <span className="ml-1.5 text-xs font-normal text-muted-foreground">({sources.length})</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {sources.length > 0 ? (
+              <div className="space-y-2">
+                {sources.map((s) => (
+                  <div key={s.slot} className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-medium text-foreground">{s.name}</div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {s.source_type} &middot; {s.status}
+                      </div>
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {s.source_type} &middot; {s.status}
-                    </div>
+                    <span className="shrink-0 text-xs font-medium text-foreground">{s.temp_c.toFixed(1)} °C</span>
                   </div>
-                  <span className="shrink-0 text-xs font-medium text-foreground">
-                    {s.temp_c.toFixed(1)} °C
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">No sources</p>
-          )}
-        </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">No sources</p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Curves */}
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">
-            Curves
-            {curves.length > 0 && (
-              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                ({curves.length})
-              </span>
-            )}
-          </h2>
-          {curves.length > 0 ? (
-            <div className="space-y-2">
-              {curves.map((c) => (
-                <div
-                  key={c.slot}
-                  className="flex items-center justify-between"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium text-foreground">
-                      {c.name}
+        <Card className="gap-2 py-0">
+          <CardHeader className="px-4 pt-4 pb-0">
+            <CardTitle className="text-sm">
+              Curves
+              {curves.length > 0 && <span className="ml-1.5 text-xs font-normal text-muted-foreground">({curves.length})</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {curves.length > 0 ? (
+              <div className="space-y-2">
+                {curves.map((c) => (
+                  <div key={c.slot} className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-medium text-foreground">{c.name}</div>
                     </div>
+                    <Badge className="bg-purple-50 text-[10px] text-purple-700 dark:bg-purple-800 dark:text-purple-200">{c.points.length} pts</Badge>
                   </div>
-                  <span className="shrink-0 text-[10px] text-muted-foreground">
-                    {c.points.length} pts
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">No curves</p>
-          )}
-        </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">No curves</p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* Schedules */}
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">
-            Schedules
-            {schedules.length > 0 && (
-              <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                ({schedules.length})
-              </span>
-            )}
-          </h2>
-          {schedules.length > 0 ? (
-            <div className="space-y-2">
-              {schedules.map((sch) => (
-                <div
-                  key={sch.slot}
-                  className="flex items-center justify-between"
-                >
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium text-foreground">
-                      Fan {sch.fan_id} &middot; {sch.duty}%
+        <Card className="gap-2 py-0">
+          <CardHeader className="px-4 pt-4 pb-0">
+            <CardTitle className="text-sm">
+              Schedules
+              {schedules.length > 0 && <span className="ml-1.5 text-xs font-normal text-muted-foreground">({schedules.length})</span>}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {schedules.length > 0 ? (
+              <div className="space-y-2">
+                {schedules.map((sch) => (
+                  <div key={sch.slot} className="flex items-center justify-between">
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-xs font-medium text-foreground">
+                        Fan {sch.fan_id} &middot; {sch.duty}%
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {Math.floor(sch.start_min / 60)}:{String(sch.start_min % 60).padStart(2, "0")} – {Math.floor(sch.end_min / 60)}:{String(sch.end_min % 60).padStart(2, "0")}
+                      </div>
                     </div>
-                    <div className="text-[10px] text-muted-foreground">
-                      {Math.floor(sch.start_min / 60)}:
-                      {String(sch.start_min % 60).padStart(2, "0")} –{" "}
-                      {Math.floor(sch.end_min / 60)}:
-                      {String(sch.end_min % 60).padStart(2, "0")}
-                    </div>
+                    <Badge className={`text-[10px] ${sch.enabled ? "bg-green-50 text-green-700 dark:bg-green-800 dark:text-green-200" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>{sch.enabled ? "on" : "off"}</Badge>
                   </div>
-                  <span
-                    className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                      sch.enabled
-                        ? "bg-success/10 text-success"
-                        : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {sch.enabled ? "on" : "off"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">No schedules</p>
-          )}
-        </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">No schedules</p>
+            )}
+          </CardContent>
+        </Card>
 
         {/* WiFi Status */}
-        <div className="rounded-lg border border-border bg-card p-4">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">WiFi</h2>
-          {wifiStatus ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Status</span>
-                <span
-                  className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
-                    wifiStatus.connected
-                      ? "bg-success/10 text-success"
-                      : "bg-destructive/10 text-destructive"
-                  }`}
-                >
-                  {wifiStatus.connected ? "Connected" : "Disconnected"}
-                </span>
-              </div>
-              {wifiStatus.connected && (
+        <Card className="gap-2 py-0">
+          <CardHeader className="px-4 pt-4 pb-0">
+            <CardTitle className="text-sm">WiFi</CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            {wifiStatus ? (
+              <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">IP</span>
-                  <span className="font-mono text-xs font-medium text-foreground">
-                    {wifiStatus.ip}
-                  </span>
+                  <span className="text-xs text-muted-foreground">Status</span>
+                  <Badge className={`text-[10px] ${wifiStatus.connected ? "bg-green-50 text-green-700 dark:bg-green-800 dark:text-green-200" : "bg-red-50 text-red-700 dark:bg-red-800 dark:text-red-200"}`}>
+                    {wifiStatus.connected ? "Connected" : "Disconnected"}
+                  </Badge>
                 </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground">Loading...</p>
-          )}
-        </div>
+                {wifiStatus.connected && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">IP</span>
+                    <span className="font-mono text-xs font-medium text-foreground">{wifiStatus.ip}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Loading...</p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
