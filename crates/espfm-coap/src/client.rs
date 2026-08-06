@@ -497,4 +497,37 @@ mod tests {
         let got = client.get_control().await.unwrap();
         assert_eq!(got.hysteresis, None);
     }
+
+    #[tokio::test]
+    async fn set_control_roundtrip_via_echo() {
+        let addr = spawn_echo_server().await;
+        let client = CoapClient::new(addr).await.unwrap();
+
+        let tunables = ControlTunables {
+            hysteresis: Some(7),
+            failsafe_policy: Some(proto::FailsafePolicy::FailsafeSafeDuty),
+            ..Default::default()
+        };
+
+        // PUT /control: the echo returns the request bytes as 2.05, which
+        // `set_control` decodes (leniently) as a StatusResponse and discards.
+        // Proves the Some(payload) encode → PUT → check_status path.
+        assert!(client.set_control(&tunables).await.is_ok());
+
+        // The echo server echoes the request payload, so decode it as the
+        // ControlConfig that was sent: full wire round-trip of a non-empty
+        // config, including the enum-typed failsafe_policy field.
+        let res = Resource::<proto::ControlConfig, proto::ControlConfig>::new(
+            "control",
+            Method::Put,
+        );
+        let cfg: proto::ControlConfig = (&tunables).into();
+        let echo: proto::ControlConfig = client.request(&res, Some(&cfg)).await.unwrap();
+        assert_eq!(echo, cfg);
+
+        // Domain-level decode maps the echoed enum back to FailsafeSafeDuty
+        // (the try_from path); structural equality via the newly-derived
+        // PartialEq on ControlTunables.
+        assert_eq!(ControlTunables::from(echo), tunables);
+    }
 }

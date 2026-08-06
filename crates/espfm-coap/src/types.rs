@@ -17,7 +17,7 @@ pub struct FanCreateOpts {
 /// Control-loop tunables (partial update — omitted fields are preserved by firmware).
 ///
 /// Unknown `failsafe_policy` wire values silently decode to `FailsafeHold`.
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct ControlTunables {
     pub hysteresis: Option<u32>,
     pub ramp_up: Option<u32>,
