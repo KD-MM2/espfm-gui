@@ -659,6 +659,8 @@ mod tests {
         };
 
         let wire = codec::encode(&sent).unwrap();
+        // 1024 is coap 0.27's internal `MAX_PAYLOAD_BLOCK` (the default Block1
+        // size), so a larger payload forces the request through Block1 chunking.
         assert!(
             wire.len() > 1024,
             "test payload must exceed one CoAP block (got {} bytes)",
@@ -669,6 +671,13 @@ mod tests {
         // echo as the same type: the decoded value must equal the original,
         // which proves every byte survived Block1 (request) + Block2
         // (response) reassembly without truncation.
+        //
+        // NOTE: the `POST /config` path is TEST-ONLY. The echo server merely
+        // echoes the payload, so this exercises only the transport/blockwise
+        // reassembly, not the real firmware behavior. The firmware's
+        // `POST /config` is deliberately excluded from the GUI's resource
+        // table because it schedules a 2s reboot; do not copy this path into
+        // production code.
         let res = Resource::<proto::ConfigFile, proto::ConfigFile>::new("config", Method::Post);
         let echo: proto::ConfigFile = client.request(&res, Some(&sent)).await.unwrap();
         assert_eq!(echo, sent);
