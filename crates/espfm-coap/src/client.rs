@@ -70,7 +70,7 @@ impl CoapClient {
             .client
             .send(request)
             .await
-            .map_err(|e| map_io_error(e))?;
+            .map_err(map_io_error)?;
         check_status(&response)?;
         codec::decode(&response.message.payload)
     }
