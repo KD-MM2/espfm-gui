@@ -100,11 +100,20 @@ impl CoapClient {
         name: &str,
         pwm_gpio: u32,
         tach_gpio: u32,
+        opts: FanCreateOpts,
     ) -> Result<FanState, CoapError> {
         let req = proto::FanCreateRequest {
-            name: name.to_string(),
+            name: Some(name.to_string()),
             pwm_gpio,
             tach_gpio,
+            mode: opts.mode.map(|m| m.into()),
+            duty: opts.duty,
+            source_id: opts.source_id,
+            curve_id: opts.curve_id,
+            schedule_id: opts.schedule_id,
+            group_id: opts.group_id,
+            inverted: opts.inverted,
+            enabled: opts.enabled,
         };
         let data = self.post("fans", &req).await?;
         let info: proto::FanInfo = codec::decode(&data)?;

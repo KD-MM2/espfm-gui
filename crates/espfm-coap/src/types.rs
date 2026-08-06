@@ -1,5 +1,19 @@
 use crate::proto;
 
+/// Optional settings for fan creation.
+/// All fields are `None` by default (use `FanCreateOpts::default()`).
+#[derive(Debug, Clone, Default)]
+pub struct FanCreateOpts {
+    pub mode: Option<proto::FanMode>,
+    pub duty: Option<u32>,
+    pub source_id: Option<u32>,
+    pub curve_id: Option<u32>,
+    pub schedule_id: Option<u32>,
+    pub group_id: Option<u32>,
+    pub inverted: Option<bool>,
+    pub enabled: Option<bool>,
+}
+
 /// Discovered device information (from mDNS or direct connection).
 #[derive(Debug, Clone)]
 pub struct DeviceInfo {

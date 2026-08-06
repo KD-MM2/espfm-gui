@@ -299,7 +299,12 @@ pub async fn create_fan(
         .ok_or_else(|| format!("Device {device_id} not connected"))?;
     let f = conn
         .client
-        .create_fan(&req.name, req.pwm_gpio as u32, req.tach_gpio as u32)
+        .create_fan(
+            &req.name,
+            req.pwm_gpio as u32,
+            req.tach_gpio as u32,
+            espfm_coap::FanCreateOpts::default(),
+        )
         .await
         .map_err(|e| format!("create_fan failed: {e}"))?;
     Ok(FanState {
@@ -347,6 +352,7 @@ pub async fn update_fan(
         enabled: req.enabled,
         pwm_gpio: req.pwm_gpio,
         tach_gpio: req.tach_gpio,
+        name: req.name,
     };
     let f = conn
         .client
@@ -743,6 +749,7 @@ pub async fn create_schedule(
         start_min: req.start_min as u32,
         end_min: req.end_min as u32,
         enabled: req.enabled,
+        name: String::new(),
     };
     let s = conn
         .client
@@ -777,6 +784,7 @@ pub async fn update_schedule(
         start_min: req.start_min.map(|v| v as u32),
         end_min: req.end_min.map(|v| v as u32),
         enabled: req.enabled,
+        name: None,
     };
     let s = conn
         .client
@@ -1091,7 +1099,12 @@ pub async fn import_config(
                 let pwm_gpio = jf["pwm_gpio"].as_u64().unwrap_or(255) as u32;
                 let tach_gpio = jf["tach_gpio"].as_u64().unwrap_or(255) as u32;
                 conn.client
-                    .create_fan(&name, pwm_gpio, tach_gpio)
+                    .create_fan(
+                        &name,
+                        pwm_gpio,
+                        tach_gpio,
+                        espfm_coap::FanCreateOpts::default(),
+                    )
                     .await
                     .map_err(|e| format!("create_fan {fid} failed: {e}"))?;
                 result.fans_created += 1;
@@ -1154,6 +1167,7 @@ pub async fn import_config(
                         enabled,
                         pwm_gpio: None,
                         tach_gpio: None,
+                        name: None,
                     };
                     conn.client
                         .update_fan(fid, &proto_req)
@@ -1349,6 +1363,7 @@ pub async fn import_config(
                     start_min,
                     end_min,
                     enabled,
+                    name: String::new(),
                 };
                 conn.client
                     .create_schedule(&proto_req)
@@ -1365,6 +1380,7 @@ pub async fn import_config(
                     start_min: None,
                     end_min: None,
                     enabled: None,
+                    name: None,
                 };
                 if fan_id != ds.fan_id {
                     proto_req.fan_id = Some(fan_id);
