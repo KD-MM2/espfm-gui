@@ -28,6 +28,7 @@ pub struct FanState {
     pub slot: u32,
     pub name: String,
     pub mode: String,
+    pub mode_enum: FanMode,
     pub rpm: u32,
     pub duty_pct: u32,
     pub enabled: bool,
@@ -39,25 +40,167 @@ pub struct FanState {
     pub schedule_id: u32,
     pub group_id: u32,
     pub alarm: String,
+    pub alarm_enum: FanAlarm,
+}
+
+/// Strong-typed fan mode. Additive — `FanState.mode` (String) stays as compat.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FanMode { Manual, Auto }
+
+impl From<proto::FanMode> for FanMode {
+    fn from(m: proto::FanMode) -> Self {
+        match m {
+            proto::FanMode::Auto => FanMode::Auto,
+            proto::FanMode::Manual => FanMode::Manual,
+        }
+    }
+}
+
+impl std::fmt::Display for FanMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            FanMode::Manual => "manual",
+            FanMode::Auto => "auto",
+        })
+    }
+}
+
+impl std::str::FromStr for FanMode {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "auto" => Ok(FanMode::Auto),
+            "manual" => Ok(FanMode::Manual),
+            _ => Err(()),
+        }
+    }
+}
+
+/// Strong-typed fan alarm.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FanAlarm { None, Stall, Overtemp }
+
+impl From<proto::FanAlarm> for FanAlarm {
+    fn from(a: proto::FanAlarm) -> Self {
+        match a {
+            proto::FanAlarm::None => FanAlarm::None,
+            proto::FanAlarm::Stall => FanAlarm::Stall,
+            proto::FanAlarm::Overtemp => FanAlarm::Overtemp,
+        }
+    }
+}
+
+impl std::fmt::Display for FanAlarm {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            FanAlarm::None => "none",
+            FanAlarm::Stall => "stall",
+            FanAlarm::Overtemp => "overtemp",
+        })
+    }
+}
+
+/// Strong-typed temperature source kind.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SourceKind { Ntc, Ds18b20, Manual }
+
+impl From<proto::SourceType> for SourceKind {
+    fn from(t: proto::SourceType) -> Self {
+        match t {
+            proto::SourceType::Ntc => SourceKind::Ntc,
+            proto::SourceType::Ds18b20 => SourceKind::Ds18b20,
+            proto::SourceType::Manual => SourceKind::Manual,
+        }
+    }
+}
+
+impl std::fmt::Display for SourceKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            SourceKind::Ntc => "NTC",
+            SourceKind::Ds18b20 => "DS18B20",
+            SourceKind::Manual => "Manual",
+        })
+    }
+}
+
+/// Strong-typed source validity status.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SourceStatus { Valid, Stale, Invalid }
+
+impl From<proto::SourceStatus> for SourceStatus {
+    fn from(s: proto::SourceStatus) -> Self {
+        match s {
+            proto::SourceStatus::Valid => SourceStatus::Valid,
+            proto::SourceStatus::Stale => SourceStatus::Stale,
+            proto::SourceStatus::Invalid => SourceStatus::Invalid,
+        }
+    }
+}
+
+impl std::fmt::Display for SourceStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            SourceStatus::Valid => "valid",
+            SourceStatus::Stale => "stale",
+            SourceStatus::Invalid => "invalid",
+        })
+    }
+}
+
+/// Strong-typed WiFi auth mode (ESP-IDF `wifi_auth_mode_t` values).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WifiAuthMode {
+    Open, Wep, WpaPsk, Wpa2Psk, WpaWpa2Psk, Enterprise, Wpa3Psk, Wpa2Wpa3Psk, Unknown,
+}
+
+impl From<u32> for WifiAuthMode {
+    fn from(v: u32) -> Self {
+        match v {
+            0 => WifiAuthMode::Open,
+            1 => WifiAuthMode::Wep,
+            2 => WifiAuthMode::WpaPsk,
+            3 => WifiAuthMode::Wpa2Psk,
+            4 => WifiAuthMode::WpaWpa2Psk,
+            5 => WifiAuthMode::Enterprise,
+            6 => WifiAuthMode::Wpa3Psk,
+            7 => WifiAuthMode::Wpa2Wpa3Psk,
+            _ => WifiAuthMode::Unknown,
+        }
+    }
+}
+
+impl std::fmt::Display for WifiAuthMode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            WifiAuthMode::Open => "OPEN",
+            WifiAuthMode::Wep => "WEP",
+            WifiAuthMode::WpaPsk => "WPA_PSK",
+            WifiAuthMode::Wpa2Psk => "WPA2_PSK",
+            WifiAuthMode::WpaWpa2Psk => "WPA_WPA2_PSK",
+            WifiAuthMode::Enterprise => "ENTERPRISE",
+            WifiAuthMode::Wpa3Psk => "WPA3_PSK",
+            WifiAuthMode::Wpa2Wpa3Psk => "WPA2_WPA3_PSK",
+            WifiAuthMode::Unknown => "UNKNOWN",
+        })
+    }
 }
 
 impl From<proto::FanInfo> for FanState {
     fn from(f: proto::FanInfo) -> Self {
-        let mode = match proto::FanMode::try_from(f.mode) {
-            Ok(proto::FanMode::Auto) => "auto",
-            _ => "manual",
-        }
-        .to_string();
-        let alarm = match proto::FanAlarm::try_from(f.alarm) {
-            Ok(proto::FanAlarm::Stall) => "stall",
-            Ok(proto::FanAlarm::Overtemp) => "overtemp",
-            _ => "none",
-        }
-        .to_string();
+        let mode_enum = match proto::FanMode::try_from(f.mode) {
+            Ok(m) => FanMode::from(m),
+            Err(_) => FanMode::Manual,
+        };
+        let alarm_enum = match proto::FanAlarm::try_from(f.alarm) {
+            Ok(a) => FanAlarm::from(a),
+            Err(_) => FanAlarm::None,
+        };
         Self {
             slot: f.id,
             name: f.name,
-            mode,
+            mode: mode_enum.to_string(),
+            mode_enum,
             rpm: f.rpm,
             duty_pct: f.duty,
             enabled: f.enabled,
@@ -68,7 +211,8 @@ impl From<proto::FanInfo> for FanState {
             curve_id: f.curve_id,
             schedule_id: f.schedule_id,
             group_id: f.group_id,
-            alarm,
+            alarm: alarm_enum.to_string(),
+            alarm_enum,
         }
     }
 }
@@ -79,43 +223,38 @@ pub struct TempSource {
     pub slot: u32,
     pub name: String,
     pub source_type: String,
+    pub kind_enum: SourceKind,
     pub temp_c: f32,
     pub rom_code: Option<String>,
     pub status: String,
+    pub status_enum: SourceStatus,
     pub gpio: u32,
 }
 
 impl From<proto::SourceInfo> for TempSource {
     fn from(s: proto::SourceInfo) -> Self {
-        let source_type = match proto::SourceType::try_from(s.r#type) {
-            Ok(proto::SourceType::Ntc) => "NTC",
-            Ok(proto::SourceType::Ds18b20) => "DS18B20",
-            Ok(proto::SourceType::Manual) => "Manual",
-            _ => "Unknown",
-        }
-        .to_string();
-
-        let status = match proto::SourceStatus::try_from(s.status) {
-            Ok(proto::SourceStatus::Valid) => "valid",
-            Ok(proto::SourceStatus::Stale) => "stale",
-            Ok(proto::SourceStatus::Invalid) => "invalid",
-            _ => "valid",
-        }
-        .to_string();
-
+        let kind_enum = match proto::SourceType::try_from(s.r#type) {
+            Ok(t) => SourceKind::from(t),
+            Err(_) => SourceKind::Manual,
+        };
+        let status_enum = match proto::SourceStatus::try_from(s.status) {
+            Ok(st) => SourceStatus::from(st),
+            Err(_) => SourceStatus::Valid,
+        };
         let rom_code = if s.ds18b20_rom_code != 0 {
             Some(format!("{:016X}", s.ds18b20_rom_code))
         } else {
             None
         };
-
         Self {
             slot: s.id,
             name: s.name,
-            source_type,
+            source_type: kind_enum.to_string(),
+            kind_enum,
             temp_c: s.temp_c,
             rom_code,
-            status,
+            status: status_enum.to_string(),
+            status_enum,
             gpio: s.gpio,
         }
     }
@@ -205,18 +344,6 @@ impl From<proto::SystemInfo> for SystemInfo {
     }
 }
 
-/// WiFi auth mode labels, matching ESP-IDF wifi_auth_mode_t values.
-const WIFI_AUTH_LABELS: [&str; 8] = [
-    "OPEN",
-    "WEP",
-    "WPA_PSK",
-    "WPA2_PSK",
-    "WPA_WPA2_PSK",
-    "ENTERPRISE",
-    "WPA3_PSK",
-    "WPA2_WPA3_PSK",
-];
-
 /// A WiFi access point seen during scan.
 #[derive(Debug, Clone)]
 pub struct WifiAp {
@@ -224,19 +351,18 @@ pub struct WifiAp {
     pub rssi: i32,
     pub channel: u32,
     pub authmode: String,
+    pub authmode_enum: WifiAuthMode,
 }
 
 impl From<proto::WifiApRecord> for WifiAp {
     fn from(ap: proto::WifiApRecord) -> Self {
-        let authmode = WIFI_AUTH_LABELS
-            .get(ap.authmode as usize)
-            .unwrap_or(&"UNKNOWN")
-            .to_string();
+        let authmode_enum = WifiAuthMode::from(ap.authmode);
         Self {
             ssid: ap.ssid,
             rssi: ap.rssi,
             channel: ap.channel,
-            authmode,
+            authmode: authmode_enum.to_string(),
+            authmode_enum,
         }
     }
 }
@@ -274,5 +400,62 @@ impl From<proto::Ds18b20Device> for Ds18b20Device {
             rom_code: format!("{:016X}", d.rom_code),
             temp_c: d.temp_c,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn fan_mode_from_proto() {
+        assert_eq!(FanMode::from(proto::FanMode::Auto), FanMode::Auto);
+        assert_eq!(FanMode::from(proto::FanMode::Manual), FanMode::Manual);
+    }
+
+    #[test]
+    fn fan_mode_display_and_fromstr() {
+        assert_eq!(FanMode::Auto.to_string(), "auto");
+        assert_eq!(FanMode::Manual.to_string(), "manual");
+        assert_eq!("auto".parse::<FanMode>().unwrap(), FanMode::Auto);
+        assert_eq!("manual".parse::<FanMode>().unwrap(), FanMode::Manual);
+        assert!("bogus".parse::<FanMode>().is_err());
+    }
+
+    #[test]
+    fn source_kind_and_status() {
+        assert_eq!(SourceKind::from(proto::SourceType::Ntc), SourceKind::Ntc);
+        assert_eq!(SourceKind::from(proto::SourceType::Ds18b20), SourceKind::Ds18b20);
+        assert_eq!(SourceKind::from(proto::SourceType::Manual), SourceKind::Manual);
+        assert_eq!(SourceStatus::from(proto::SourceStatus::Valid), SourceStatus::Valid);
+        assert_eq!(SourceStatus::from(proto::SourceStatus::Invalid), SourceStatus::Invalid);
+    }
+
+    #[test]
+    fn fan_alarm_from_proto() {
+        assert_eq!(FanAlarm::from(proto::FanAlarm::None), FanAlarm::None);
+        assert_eq!(FanAlarm::from(proto::FanAlarm::Stall), FanAlarm::Stall);
+        assert_eq!(FanAlarm::from(proto::FanAlarm::Overtemp), FanAlarm::Overtemp);
+    }
+
+    #[test]
+    fn wifi_auth_mode() {
+        assert_eq!(WifiAuthMode::from(0), WifiAuthMode::Open);
+        assert_eq!(WifiAuthMode::from(3), WifiAuthMode::Wpa2Psk);
+        assert_eq!(WifiAuthMode::from(99), WifiAuthMode::Unknown);
+    }
+
+    #[test]
+    fn fan_state_enum_fields_populated() {
+        let f = proto::FanInfo {
+            id: 0, name: "x".into(), mode: 1, duty: 50, rpm: 1000,
+            enabled: true, inverted: false, pwm_gpio: 4, tach_gpio: 8,
+            source_id: 255, curve_id: 255, schedule_id: 255, group_id: 0, alarm: 1,
+        };
+        let state = FanState::from(f);
+        assert_eq!(state.mode_enum, FanMode::Auto);
+        assert_eq!(state.alarm_enum, FanAlarm::Stall);
+        assert_eq!(state.mode, "auto");
+        assert_eq!(state.alarm, "stall");
     }
 }
