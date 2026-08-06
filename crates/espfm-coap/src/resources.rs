@@ -3,6 +3,11 @@ use prost::Message;
 use std::marker::PhantomData;
 
 /// A declarative CoAP resource: path + HTTP-style method + protobuf wire types.
+///
+/// The resource table covers the 32 GUI-supported (path, method) endpoints.
+/// Firmware's `POST /config` import is deliberately excluded from this subset:
+/// it schedules a 2s reboot on the device, and the GUI imports configs via
+/// per-entity CRUD instead.
 pub struct Resource<Req, Resp>
 where
     Req: Message + Default,
@@ -28,8 +33,8 @@ mod tests {
     use super::*;
     use crate::proto;
 
-    /// Erase the per-endpoint generic types so all 32 entries fit in one
-    /// homogeneous array (Rust arrays need a single element type).
+    /// Rust arrays must have a single element type, so we erase each
+    /// `Resource<Req, Resp>` to its (path, method) tuple.
     fn path_method<Req, Resp>(r: &Resource<Req, Resp>) -> (&'static str, Method)
     where
         Req: Message + Default,
@@ -38,9 +43,64 @@ mod tests {
         (r.path, r.method)
     }
 
+    /// Stable sort key for `Method` (`coap_lite::RequestType` implements
+    /// `PartialOrd` but not `Ord`, so order methods by name for the multiset
+    /// comparison).
+    fn method_key(m: Method) -> &'static str {
+        match m {
+            Method::Get => "get",
+            Method::Post => "post",
+            Method::Put => "put",
+            Method::Delete => "delete",
+            _ => "other",
+        }
+    }
+
+    /// The exact set of GUI-supported (path, method) endpoints, expressed
+    /// independently of the `Resource` table so the table cannot silently
+    /// drift (duplicate, missing, or wrong entry). Firmware's `POST /config`
+    /// import is deliberately excluded (it reboots the device); the GUI
+    /// imports configs via per-entity CRUD.
+    const EXPECTED: [(&'static str, Method); 32] = [
+        ("fans", Method::Get),
+        ("fans", Method::Post),
+        ("fans/0", Method::Get),
+        ("fans/0", Method::Put),
+        ("fans/0", Method::Delete),
+        ("sources", Method::Get),
+        ("sources", Method::Post),
+        ("sources/0", Method::Get),
+        ("sources/0", Method::Put),
+        ("sources/0", Method::Delete),
+        ("sources/temp", Method::Post),
+        ("curves", Method::Get),
+        ("curves", Method::Post),
+        ("curves/0", Method::Get),
+        ("curves/0", Method::Put),
+        ("curves/0", Method::Delete),
+        ("schedules", Method::Get),
+        ("schedules", Method::Post),
+        ("schedules/0", Method::Get),
+        ("schedules/0", Method::Put),
+        ("schedules/0", Method::Delete),
+        ("system/info", Method::Get),
+        ("system/hostname", Method::Put),
+        ("system/reboot", Method::Post),
+        ("config", Method::Get),
+        ("wifi/scan", Method::Get),
+        ("wifi/connect", Method::Post),
+        ("wifi/status", Method::Get),
+        ("ds18b20/scan", Method::Get),
+        ("ds18b20/config", Method::Post),
+        ("control", Method::Get),
+        ("control", Method::Put),
+    ];
+
     #[test]
-    fn resource_table_is_complete() {
-        // Every firmware endpoint the crate supports must appear in the table.
+    fn resource_table_covers_gui_supported_endpoints() {
+        // The declared table must match EXPECTED as multisets: same count and
+        // same (path, method) pairs — no duplicates, no missing or extra
+        // endpoints, no wrong method.
         let table = [
             path_method(&Resource::<proto::Empty, proto::FanList>::new("fans", Method::Get)),
             path_method(&Resource::<proto::FanCreateRequest, proto::FanInfo>::new("fans", Method::Post)),
@@ -75,12 +135,13 @@ mod tests {
             path_method(&Resource::<proto::Empty, proto::ControlConfig>::new("control", Method::Get)),
             path_method(&Resource::<proto::ControlConfig, proto::StatusResponse>::new("control", Method::Put)),
         ];
-        assert_eq!(table.len(), 32);
-        assert_eq!(table[0].0, "fans");
-        assert_eq!(table[0].1, Method::Get);
-        assert_eq!(table[30].0, "control");
-        assert_eq!(table[30].1, Method::Get);
-        assert_eq!(table[31].0, "control");
-        assert_eq!(table[31].1, Method::Put);
+
+        let mut actual = table.to_vec();
+        actual.sort_unstable_by(|a, b| (a.0, method_key(a.1)).cmp(&(b.0, method_key(b.1))));
+
+        let mut expected = EXPECTED.to_vec();
+        expected.sort_unstable_by(|a, b| (a.0, method_key(a.1)).cmp(&(b.0, method_key(b.1))));
+
+        assert_eq!(actual, expected);
     }
 }
