@@ -9,6 +9,7 @@ use prost::Message;
 use crate::codec;
 use crate::error::CoapError;
 use crate::proto;
+use crate::resources::Resource;
 use crate::types::*;
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(3);
@@ -26,6 +27,34 @@ impl CoapClient {
             .map_err(|e| CoapError::Unreachable(e.to_string()))?;
         client.set_receive_timeout(REQUEST_TIMEOUT);
         Ok(Self { client })
+    }
+
+    /// Issue one declarative request. Encodes `req` (if any), sends via the
+    /// transport (coap 0.27 transparently handles Block1/Block2), checks
+    /// status, and decodes the response.
+    async fn request<Req, Resp>(
+        &self,
+        res: &Resource<Req, Resp>,
+        req: Option<&Req>,
+    ) -> Result<Resp, CoapError>
+    where
+        Req: prost::Message + Default,
+        Resp: prost::Message + Default,
+    {
+        let payload = match req {
+            Some(r) => codec::encode(r)?,
+            None => Vec::new(),
+        };
+        let request = RequestBuilder::new(res.path, res.method)
+            .data((!payload.is_empty()).then_some(payload))
+            .build();
+        let response = self
+            .client
+            .send(request)
+            .await
+            .map_err(|e| map_io_error(e))?;
+        check_status(&response)?;
+        codec::decode(&response.message.payload)
     }
 
     // ── Private helpers ──────────────────────────────────────────────
@@ -349,5 +378,52 @@ fn check_status(resp: &coap_lite::CoapResponse) -> Result<(), CoapError> {
             status,
             String::from_utf8_lossy(&resp.message.payload)
         ))),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::proto;
+    use coap::server::{Server, UdpCoapListener};
+    use std::net::SocketAddr;
+    use tokio::net::UdpSocket;
+
+    /// A tiny in-process CoAP server that echoes the request payload as a
+    /// 2.05 Content response. `coap::Server` has no `local_addr()`, so we
+    /// follow the crate's own test pattern: bind a `UdpSocket`, wrap it in a
+    /// `UdpCoapListener`, and report the bound port over a channel.
+    async fn spawn_echo_server() -> SocketAddr {
+        use coap_lite::CoapRequest;
+
+        let sock = UdpSocket::bind("127.0.0.1:0").await.unwrap();
+        let bound = sock.local_addr().unwrap();
+        let listener = Box::new(UdpCoapListener::from_socket(sock));
+        let server = Server::from_listeners(vec![listener]);
+        tokio::spawn(async move {
+            let _ = server
+                .run(|mut req: Box<CoapRequest<SocketAddr>>| async move {
+                    // `CoapResponse::new` already defaults the code to 2.05
+                    // Content, so echoing the payload is sufficient.
+                    if let Some(ref mut response) = req.response {
+                        response.message.payload = req.message.payload.clone();
+                    }
+                    req
+                })
+                .await;
+        });
+        bound
+    }
+
+    #[tokio::test]
+    async fn request_roundtrip_via_generic() {
+        let addr = spawn_echo_server().await;
+        let client = CoapClient::new(addr).await.unwrap();
+
+        let res = Resource::<proto::Empty, proto::FanList>::new("fans", Method::Get);
+        // The echo server returns the (empty) request bytes; decoding yields
+        // an empty FanList.
+        let out: proto::FanList = client.request(&res, None).await.unwrap();
+        assert_eq!(out.fans.len(), 0);
     }
 }
