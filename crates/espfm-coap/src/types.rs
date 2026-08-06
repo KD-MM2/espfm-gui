@@ -14,6 +14,42 @@ pub struct FanCreateOpts {
     pub enabled: Option<bool>,
 }
 
+/// Control-loop tunables (partial update — omitted fields are preserved by firmware).
+#[derive(Debug, Clone, Default)]
+pub struct ControlTunables {
+    pub hysteresis: Option<u32>,
+    pub ramp_up: Option<u32>,
+    pub ramp_down: Option<u32>,
+    pub failsafe_policy: Option<proto::FailsafePolicy>,
+    pub safe_duty: Option<u32>,
+}
+
+impl From<proto::ControlConfig> for ControlTunables {
+    fn from(c: proto::ControlConfig) -> Self {
+        Self {
+            hysteresis: c.hysteresis,
+            ramp_up: c.ramp_up,
+            ramp_down: c.ramp_down,
+            failsafe_policy: c.failsafe_policy.map(|v| {
+                proto::FailsafePolicy::try_from(v).unwrap_or(proto::FailsafePolicy::FailsafeHold)
+            }),
+            safe_duty: c.safe_duty,
+        }
+    }
+}
+
+impl From<&ControlTunables> for proto::ControlConfig {
+    fn from(t: &ControlTunables) -> Self {
+        Self {
+            hysteresis: t.hysteresis,
+            ramp_up: t.ramp_up,
+            ramp_down: t.ramp_down,
+            failsafe_policy: t.failsafe_policy.map(|p| p as i32),
+            safe_duty: t.safe_duty,
+        }
+    }
+}
+
 /// Discovered device information (from mDNS or direct connection).
 #[derive(Debug, Clone)]
 pub struct DeviceInfo {
@@ -302,6 +338,7 @@ pub struct ScheduleInfo {
     pub start_min: u32,
     pub end_min: u32,
     pub enabled: bool,
+    pub name: String,
 }
 
 impl From<proto::ScheduleInfo> for ScheduleInfo {
@@ -313,6 +350,7 @@ impl From<proto::ScheduleInfo> for ScheduleInfo {
             start_min: s.start_min,
             end_min: s.end_min,
             enabled: s.enabled,
+            name: s.name,
         }
     }
 }
@@ -516,5 +554,44 @@ mod tests {
         assert_eq!(state.mode, "manual");
         assert_eq!(state.alarm_enum, FanAlarm::None);
         assert_eq!(state.alarm, "none");
+    }
+
+    #[test]
+    fn control_tunables_roundtrip() {
+        let t = ControlTunables {
+            hysteresis: Some(3),
+            ramp_up: Some(10),
+            ramp_down: Some(3),
+            failsafe_policy: Some(proto::FailsafePolicy::FailsafeSafeDuty),
+            safe_duty: Some(50),
+        };
+        let proto_cfg: proto::ControlConfig = (&t).into();
+        assert_eq!(proto_cfg.hysteresis, Some(3));
+        assert_eq!(proto_cfg.ramp_up, Some(10));
+        assert_eq!(proto_cfg.ramp_down, Some(3));
+        assert_eq!(proto_cfg.failsafe_policy, Some(proto::FailsafePolicy::FailsafeSafeDuty as i32));
+        assert_eq!(proto_cfg.safe_duty, Some(50));
+
+        let back = ControlTunables::from(proto_cfg);
+        assert_eq!(back.hysteresis, Some(3));
+        assert_eq!(back.failsafe_policy, Some(proto::FailsafePolicy::FailsafeSafeDuty));
+    }
+
+    #[test]
+    fn control_tunables_all_none() {
+        let t = ControlTunables::default();
+        let proto_cfg: proto::ControlConfig = (&t).into();
+        assert_eq!(proto_cfg.hysteresis, None);
+        assert_eq!(proto_cfg.failsafe_policy, None);
+    }
+
+    #[test]
+    fn schedule_name_mapped() {
+        let s = proto::ScheduleInfo {
+            id: 1, fan_id: 2, duty: 50, start_min: 480, end_min: 1080,
+            enabled: true, name: "work hours".into(),
+        };
+        let si = ScheduleInfo::from(s);
+        assert_eq!(si.name, "work hours");
     }
 }
