@@ -406,7 +406,7 @@ impl CoapClient {
         Ok(ScheduleInfo::from(info))
     }
 
-    // ── Observe ──────────────────────────────────────────────────────
+    // ── Observe ────────────────────────────────────────────
 
     /// Subscribe to a resource. Each notification is delivered as
     /// `std::io::Result<coap_lite::Packet>` to the handler (the caller decodes
@@ -577,16 +577,21 @@ mod tests {
         let addr = spawn_echo_server().await;
         let client = CoapClient::new(addr).await.unwrap();
 
-        let (tx, rx) = tokio::sync::mpsc::unbounded_channel::<()>();
+        let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel::<()>();
         let handle = client
             .subscribe("fans", move |_msg| {
                 let _ = tx.send(());
             })
             .await
             .unwrap();
-        // The echo server doesn't emit observe notifications; this just proves
-        // registration succeeded and we hold a handle. Then drop → Terminate.
-        assert!(!rx.is_closed());
+        // The echo server returns one 2.05 echo during registration, and
+        // `observe()` invokes the handler synchronously with it before
+        // returning, so a `()` is already buffered by the time we hold the
+        // handle.
+        assert_eq!(rx.try_recv(), Ok(()));
+        // Dropping the handle sends Terminate; the echo server emits no
+        // further notifications, so nothing else is buffered after teardown.
         drop(handle);
+        assert!(rx.try_recv().is_err());
     }
 }
