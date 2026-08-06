@@ -594,4 +594,88 @@ mod tests {
         drop(handle);
         assert!(rx.try_recv().is_err());
     }
+
+    /// Round-trips a proto message whose serialized bytes exceed one CoAP
+    /// block (~1 KB) through the real UDP transport and asserts lossless
+    /// reassembly. This exercises the blockwise path end to end:
+    ///
+    /// * **Request side (Block1):** `coap::UdpCoAPClient::send_request`
+    ///   splits any payload larger than `block1_size` (default 1024) into
+    ///   Block1 chunks; the in-process `coap::Server` reassembles them via its
+    ///   `coap_lite::BlockHandler` (see `ServerCoapState::intercept_request`)
+    ///   before the echo handler sees the full payload.
+    ///
+    /// * **Response side (Block2):** the echo server returns the full echoed
+    ///   payload; `BlockHandler::intercept_response` (default
+    ///   `max_total_message_size` = 1152) chunks any response larger than its
+    ///   max into a Block2 sequence, and `UdpCoAPClient::send`'s
+    ///   `receive()`/`handle_blockwise` loop reassembles it before handing the
+    ///   decoded response back. So the echo round-trip of a >1 KB payload is
+    ///   NOT a single datagram — it genuinely crosses Block1 *and* Block2.
+    ///
+    /// A `ConfigFile` with large curve/schedule tables is used because it is
+    /// the largest message in the schema and is the natural analogue of the
+    /// firmware's `GET /config` (whose response the client must reassemble).
+    #[tokio::test]
+    async fn blockwise_large_payload_roundtrip() {
+        let addr = spawn_echo_server().await;
+        let client = CoapClient::new(addr).await.unwrap();
+
+        // Build a ConfigFile whose serialized form is well over 1 KiB (the
+        // client Block1 size and the server's Block2 threshold), forcing the
+        // request and response through the blockwise path. Curve names and
+        // point values repeat so the blob is both large and regular.
+        let curves = (0..8)
+            .map(|i| proto::CurveInfo {
+                id: i,
+                name: format!("curve-{i:02}"),
+                points: (0..24)
+                    .map(|p| proto::CurvePoint {
+                        temp_c: 20.0 + p as f32 * 2.5,
+                        duty: (p % 100) as u32,
+                    })
+                    .collect(),
+            })
+            .collect();
+        let schedules = (0..6)
+            .map(|i| proto::ScheduleInfo {
+                id: i,
+                fan_id: i,
+                duty: 40 + i,
+                start_min: i * 180,
+                end_min: i * 180 + 480,
+                enabled: true,
+                name: format!("schedule-{i:02}"),
+            })
+            .collect();
+        let sent = proto::ConfigFile {
+            version: "3.0".into(),
+            fans: Some(proto::FanList { fans: Vec::new() }),
+            sources: Some(proto::SourceList {
+                sources: Vec::new(),
+            }),
+            curves: Some(proto::CurveList { curves }),
+            schedules: Some(proto::ScheduleList { schedules }),
+        };
+
+        let wire = codec::encode(&sent).unwrap();
+        assert!(
+            wire.len() > 1024,
+            "test payload must exceed one CoAP block (got {} bytes)",
+            wire.len()
+        );
+
+        // POST the ConfigFile to the echo server and decode the reassembled
+        // echo as the same type: the decoded value must equal the original,
+        // which proves every byte survived Block1 (request) + Block2
+        // (response) reassembly without truncation.
+        let res = Resource::<proto::ConfigFile, proto::ConfigFile>::new("config", Method::Post);
+        let echo: proto::ConfigFile = client.request(&res, Some(&sent)).await.unwrap();
+        assert_eq!(echo, sent);
+        assert_eq!(
+            codec::encode(&echo).unwrap().len(),
+            wire.len(),
+            "reassembled payload length must match the original"
+        );
+    }
 }
