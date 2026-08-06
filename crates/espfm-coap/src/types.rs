@@ -102,7 +102,7 @@ impl std::fmt::Display for FanAlarm {
 
 /// Strong-typed temperature source kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum SourceKind { Ntc, Ds18b20, Manual }
+pub enum SourceKind { Ntc, Ds18b20, Manual, Unknown }
 
 impl From<proto::SourceType> for SourceKind {
     fn from(t: proto::SourceType) -> Self {
@@ -120,6 +120,7 @@ impl std::fmt::Display for SourceKind {
             SourceKind::Ntc => "NTC",
             SourceKind::Ds18b20 => "DS18B20",
             SourceKind::Manual => "Manual",
+            SourceKind::Unknown => "Unknown",
         })
     }
 }
@@ -235,7 +236,7 @@ impl From<proto::SourceInfo> for TempSource {
     fn from(s: proto::SourceInfo) -> Self {
         let kind_enum = match proto::SourceType::try_from(s.r#type) {
             Ok(t) => SourceKind::from(t),
-            Err(_) => SourceKind::Manual,
+            Err(_) => SourceKind::Unknown,
         };
         let status_enum = match proto::SourceStatus::try_from(s.status) {
             Ok(st) => SourceStatus::from(st),
@@ -428,6 +429,7 @@ mod tests {
         assert_eq!(SourceKind::from(proto::SourceType::Ds18b20), SourceKind::Ds18b20);
         assert_eq!(SourceKind::from(proto::SourceType::Manual), SourceKind::Manual);
         assert_eq!(SourceStatus::from(proto::SourceStatus::Valid), SourceStatus::Valid);
+        assert_eq!(SourceStatus::from(proto::SourceStatus::Stale), SourceStatus::Stale);
         assert_eq!(SourceStatus::from(proto::SourceStatus::Invalid), SourceStatus::Invalid);
     }
 
@@ -439,10 +441,53 @@ mod tests {
     }
 
     #[test]
+    fn fan_alarm_display() {
+        assert_eq!(FanAlarm::None.to_string(), "none");
+        assert_eq!(FanAlarm::Stall.to_string(), "stall");
+        assert_eq!(FanAlarm::Overtemp.to_string(), "overtemp");
+    }
+
+    #[test]
     fn wifi_auth_mode() {
         assert_eq!(WifiAuthMode::from(0), WifiAuthMode::Open);
         assert_eq!(WifiAuthMode::from(3), WifiAuthMode::Wpa2Psk);
         assert_eq!(WifiAuthMode::from(99), WifiAuthMode::Unknown);
+    }
+
+    #[test]
+    fn temp_source_enum_fields_sync() {
+        let s = proto::SourceInfo {
+            id: 1, name: "top".into(), r#type: 1, status: 1, temp_c: 25.0,
+            gpio: 4, ds18b20_rom_code: 0,
+        };
+        let src = TempSource::from(s);
+        assert_eq!(src.kind_enum, SourceKind::Ds18b20);
+        assert_eq!(src.source_type, "DS18B20");
+        assert_eq!(src.status_enum, SourceStatus::Stale);
+        assert_eq!(src.status, "stale");
+
+        let s = proto::SourceInfo {
+            id: 2, name: "bad".into(), r#type: 99, status: 0, temp_c: 0.0,
+            gpio: 255, ds18b20_rom_code: 0,
+        };
+        let src = TempSource::from(s);
+        assert_eq!(src.kind_enum, SourceKind::Unknown);
+        assert_eq!(src.source_type, "Unknown");
+        assert_eq!(src.status_enum, SourceStatus::Valid);
+        assert_eq!(src.status, "valid");
+    }
+
+    #[test]
+    fn wifi_ap_enum_field_sync() {
+        let ap = proto::WifiApRecord { ssid: "net".into(), rssi: -40, channel: 6, authmode: 4 };
+        let wifi = WifiAp::from(ap);
+        assert_eq!(wifi.authmode_enum, WifiAuthMode::WpaWpa2Psk);
+        assert_eq!(wifi.authmode, "WPA_WPA2_PSK");
+
+        let ap = proto::WifiApRecord { ssid: "bad".into(), rssi: -90, channel: 1, authmode: 99 };
+        let wifi = WifiAp::from(ap);
+        assert_eq!(wifi.authmode_enum, WifiAuthMode::Unknown);
+        assert_eq!(wifi.authmode, "UNKNOWN");
     }
 
     #[test]
@@ -457,5 +502,19 @@ mod tests {
         assert_eq!(state.alarm_enum, FanAlarm::Stall);
         assert_eq!(state.mode, "auto");
         assert_eq!(state.alarm, "stall");
+    }
+
+    #[test]
+    fn fan_state_fallback() {
+        let f = proto::FanInfo {
+            id: 0, name: "x".into(), mode: 99, duty: 50, rpm: 1000,
+            enabled: true, inverted: false, pwm_gpio: 4, tach_gpio: 8,
+            source_id: 255, curve_id: 255, schedule_id: 255, group_id: 0, alarm: 99,
+        };
+        let state = FanState::from(f);
+        assert_eq!(state.mode_enum, FanMode::Manual);
+        assert_eq!(state.mode, "manual");
+        assert_eq!(state.alarm_enum, FanAlarm::None);
+        assert_eq!(state.alarm, "none");
     }
 }
