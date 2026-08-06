@@ -32,6 +32,7 @@ impl CoapClient {
     /// Issue one declarative request. Encodes `req` (if any), sends via the
     /// transport (coap 0.27 transparently handles Block1/Block2), checks
     /// status, and decodes the response.
+    #[allow(dead_code)] // callers land in tasks 5/6
     async fn request<Req, Resp>(
         &self,
         res: &Resource<Req, Resp>,
@@ -384,15 +385,13 @@ fn check_status(resp: &coap_lite::CoapResponse) -> Result<(), CoapError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::proto;
     use coap::server::{Server, UdpCoapListener};
-    use std::net::SocketAddr;
     use tokio::net::UdpSocket;
 
     /// A tiny in-process CoAP server that echoes the request payload as a
     /// 2.05 Content response. `coap::Server` has no `local_addr()`, so we
     /// follow the crate's own test pattern: bind a `UdpSocket`, wrap it in a
-    /// `UdpCoapListener`, and report the bound port over a channel.
+    /// `UdpCoapListener`, and return the bound address.
     async fn spawn_echo_server() -> SocketAddr {
         use coap_lite::CoapRequest;
 
@@ -420,10 +419,24 @@ mod tests {
         let addr = spawn_echo_server().await;
         let client = CoapClient::new(addr).await.unwrap();
 
+        // Empty-payload GET: the echo server returns the (empty) request
+        // bytes; decoding yields an empty FanList.
         let res = Resource::<proto::Empty, proto::FanList>::new("fans", Method::Get);
-        // The echo server returns the (empty) request bytes; decoding yields
-        // an empty FanList.
         let out: proto::FanList = client.request(&res, None).await.unwrap();
         assert_eq!(out.fans.len(), 0);
+
+        // Payload POST: exercises encode -> attach -> send -> echo -> decode
+        // with a non-empty request body, so `codec::encode` and the data
+        // attachment path are covered.
+        let msg = proto::WifiConnectRequest {
+            ssid: "test".into(),
+            password: "pw".into(),
+        };
+        let res = Resource::<proto::WifiConnectRequest, proto::WifiConnectRequest>::new(
+            "wifi/connect",
+            Method::Post,
+        );
+        let echo: proto::WifiConnectRequest = client.request(&res, Some(&msg)).await.unwrap();
+        assert_eq!(echo, msg);
     }
 }
