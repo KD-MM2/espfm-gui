@@ -15,6 +15,8 @@ pub struct FanCreateOpts {
 }
 
 /// Control-loop tunables (partial update — omitted fields are preserved by firmware).
+///
+/// Unknown `failsafe_policy` wire values silently decode to `FailsafeHold`.
 #[derive(Debug, Clone, Default)]
 pub struct ControlTunables {
     pub hysteresis: Option<u32>,
@@ -574,7 +576,23 @@ mod tests {
 
         let back = ControlTunables::from(proto_cfg);
         assert_eq!(back.hysteresis, Some(3));
+        assert_eq!(back.ramp_up, Some(10));
+        assert_eq!(back.ramp_down, Some(3));
         assert_eq!(back.failsafe_policy, Some(proto::FailsafePolicy::FailsafeSafeDuty));
+        assert_eq!(back.safe_duty, Some(50));
+    }
+
+    #[test]
+    fn control_tunables_failsafe_fallback() {
+        let proto_cfg = proto::ControlConfig {
+            hysteresis: None,
+            ramp_up: None,
+            ramp_down: None,
+            failsafe_policy: Some(99),
+            safe_duty: None,
+        };
+        let back = ControlTunables::from(proto_cfg);
+        assert_eq!(back.failsafe_policy, Some(proto::FailsafePolicy::FailsafeHold));
     }
 
     #[test]
