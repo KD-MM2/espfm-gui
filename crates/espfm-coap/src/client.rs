@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::net::SocketAddr;
 use std::time::Duration;
 
@@ -32,7 +33,6 @@ impl CoapClient {
     /// Issue one declarative request. Encodes `req` (if any), sends via the
     /// transport (coap 0.27 transparently handles Block1/Block2), checks
     /// status, and decodes the response.
-    #[allow(dead_code)] // callers land in tasks 5/6
     async fn request<Req, Resp>(
         &self,
         res: &Resource<Req, Resp>,
@@ -46,7 +46,7 @@ impl CoapClient {
             Some(r) => codec::encode(r)?,
             None => Vec::new(),
         };
-        let request = RequestBuilder::new(res.path, res.method)
+        let request = RequestBuilder::new(res.path.as_ref(), res.method)
             .data((!payload.is_empty()).then_some(payload))
             .build();
         let response = self
@@ -341,6 +341,54 @@ impl CoapClient {
         let status: proto::WifiStatus = codec::decode(&data)?;
         Ok(WifiStatus::from(status))
     }
+
+    // ── Control tunables ─────────────────────────────────────────────
+
+    pub async fn get_control(&self) -> Result<ControlTunables, CoapError> {
+        let res = Resource::<proto::Empty, proto::ControlConfig>::new("control", Method::Get);
+        let cfg: proto::ControlConfig = self.request(&res, None).await?;
+        Ok(ControlTunables::from(cfg))
+    }
+
+    pub async fn set_control(&self, tunables: &ControlTunables) -> Result<(), CoapError> {
+        let res = Resource::<proto::ControlConfig, proto::StatusResponse>::new(
+            "control",
+            Method::Put,
+        );
+        let req: proto::ControlConfig = tunables.into();
+        self.request::<proto::ControlConfig, proto::StatusResponse>(&res, Some(&req))
+            .await?;
+        Ok(())
+    }
+
+    // ── Per-id GETs (full endpoint parity) ──────────────────────────
+
+    pub async fn get_source(&self, slot: u32) -> Result<TempSource, CoapError> {
+        let res = Resource::<proto::Empty, proto::SourceInfo>::new_cow(
+            Cow::Owned(format!("sources/{}", slot)),
+            Method::Get,
+        );
+        let info: proto::SourceInfo = self.request(&res, None).await?;
+        Ok(TempSource::from(info))
+    }
+
+    pub async fn get_curve(&self, slot: u32) -> Result<CurveInfo, CoapError> {
+        let res = Resource::<proto::Empty, proto::CurveInfo>::new_cow(
+            Cow::Owned(format!("curves/{}", slot)),
+            Method::Get,
+        );
+        let info: proto::CurveInfo = self.request(&res, None).await?;
+        Ok(CurveInfo::from(info))
+    }
+
+    pub async fn get_schedule(&self, slot: u32) -> Result<ScheduleInfo, CoapError> {
+        let res = Resource::<proto::Empty, proto::ScheduleInfo>::new_cow(
+            Cow::Owned(format!("schedules/{}", slot)),
+            Method::Get,
+        );
+        let info: proto::ScheduleInfo = self.request(&res, None).await?;
+        Ok(ScheduleInfo::from(info))
+    }
 }
 
 // ── Internal helpers ──────────────────────────────────────────────────
@@ -438,5 +486,15 @@ mod tests {
         );
         let echo: proto::WifiConnectRequest = client.request(&res, Some(&msg)).await.unwrap();
         assert_eq!(echo, msg);
+    }
+
+    #[tokio::test]
+    async fn control_roundtrip_via_echo() {
+        let addr = spawn_echo_server().await;
+        let client = CoapClient::new(addr).await.unwrap();
+
+        // GET /control against the echo server returns empty payload → empty ControlTunables
+        let got = client.get_control().await.unwrap();
+        assert_eq!(got.hysteresis, None);
     }
 }

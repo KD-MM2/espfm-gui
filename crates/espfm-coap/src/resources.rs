@@ -1,5 +1,6 @@
 use coap::request::Method;
 use prost::Message;
+use std::borrow::Cow;
 use std::marker::PhantomData;
 
 /// A declarative CoAP resource: path + HTTP-style method + protobuf wire types.
@@ -13,7 +14,7 @@ where
     Req: Message + Default,
     Resp: Message + Default,
 {
-    pub path: &'static str,
+    pub path: Cow<'static, str>,
     pub method: Method,
     pub _marker: PhantomData<(Req, Resp)>,
 }
@@ -23,7 +24,13 @@ where
     Req: Message + Default,
     Resp: Message + Default,
 {
+    /// Static-table constructor: a compile-time known path.
     pub const fn new(path: &'static str, method: Method) -> Self {
+        Self { path: Cow::Borrowed(path), method, _marker: PhantomData }
+    }
+
+    /// Dynamic-path constructor: an owned path (e.g. `sources/{slot}`).
+    pub const fn new_cow(path: Cow<'static, str>, method: Method) -> Self {
         Self { path, method, _marker: PhantomData }
     }
 }
@@ -34,13 +41,21 @@ mod tests {
     use crate::proto;
 
     /// Rust arrays must have a single element type, so we erase each
-    /// `Resource<Req, Resp>` to its (path, method) tuple.
+    /// `Resource<Req, Resp>` to its (path, method) tuple. `path` is now a
+    /// `Cow<'static, str>`; the table test only covers the static GUI
+    /// endpoint table, whose entries are always `Cow::Borrowed`, so we unwrap
+    /// the inner `'static` string (a `&str` would borrow the temporary
+    /// `Resource` in the array and fail to compile). Dynamic per-id paths
+    /// (`Cow::Owned`) live in `client.rs`, never in this table.
     fn path_method<Req, Resp>(r: &Resource<Req, Resp>) -> (&'static str, Method)
     where
         Req: Message + Default,
         Resp: Message + Default,
     {
-        (r.path, r.method)
+        match &r.path {
+            Cow::Borrowed(p) => (*p, r.method),
+            Cow::Owned(_) => unreachable!("resource table uses only static paths"),
+        }
     }
 
     /// Stable sort key for `Method` (`coap_lite::RequestType` implements
