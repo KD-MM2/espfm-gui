@@ -37,13 +37,13 @@ export function ActivityLog({ entries, maxItems = 7, onShowAll, totalCount }: Ac
       <CardHeader className="px-4 pt-4 pb-2">
         <CardTitle className="text-sm">Activity Log</CardTitle>
       </CardHeader>
-      <CardContent className="min-h-0 flex-1 px-4 pb-4">
+      <CardContent className="flex min-h-0 flex-1 flex-col px-4 pb-4">
         {entries.length === 0 ? (
           <div className="flex flex-1 items-center justify-center">
             <p className="text-xs text-muted-foreground">No activity yet</p>
           </div>
         ) : (
-          <div className="min-h-0 flex-1 space-y-2.5 overflow-auto">
+          <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto">
             {visibleEntries.map((entry) => {
               const type = toEventType(entry.event_type);
               return (
