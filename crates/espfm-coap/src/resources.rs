@@ -76,7 +76,7 @@ mod tests {
     /// drift (duplicate, missing, or wrong entry). Firmware's `POST /config`
     /// import is deliberately excluded (it reboots the device); the GUI
     /// imports configs via per-entity CRUD.
-    const EXPECTED: [(&'static str, Method); 32] = [
+    const EXPECTED: [(&str, Method); 32] = [
         ("fans", Method::Get),
         ("fans", Method::Post),
         ("fans/0", Method::Get),

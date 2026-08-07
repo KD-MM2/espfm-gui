@@ -59,14 +59,21 @@ export function SchedulesPage() {
   async function handleUpdate(data: { fan_id: number; duty: number; start_min: number; end_min: number; enabled: boolean }) {
     if (activeDeviceId == null || editingSchedule == null) return;
     try {
-      const updated = await api.updateSchedule(activeDeviceId, editingSchedule.slot, {
-        fan_id: data.fan_id,
-        duty: data.duty,
-        start_min: data.start_min,
-        end_min: data.end_min,
-        enabled: data.enabled
-      });
-      setSchedules((prev) => prev.map((s) => (s.slot === updated.slot ? updated : s)));
+      const s = editingSchedule;
+      // Send only the fields the user actually changed (partial update).
+      const update: Parameters<typeof api.updateSchedule>[2] = {};
+      if (data.fan_id !== s.fan_id) update.fan_id = data.fan_id;
+      if (data.duty !== s.duty) update.duty = data.duty;
+      if (data.start_min !== s.start_min) update.start_min = data.start_min;
+      if (data.end_min !== s.end_min) update.end_min = data.end_min;
+      if (data.enabled !== s.enabled) update.enabled = data.enabled;
+      // Nothing changed — avoid a pointless empty PUT.
+      if (Object.keys(update).length === 0) {
+        closeForm();
+        return;
+      }
+      const updated = await api.updateSchedule(activeDeviceId, s.slot, update);
+      setSchedules((prev) => prev.map((x) => (x.slot === updated.slot ? updated : x)));
       showToast("Schedule updated", "success");
       logUserAction(activeDeviceId, "schedule", `Schedule updated (fan ${data.fan_id}, ${data.duty}%)`, `slot=${updated.slot}`);
       closeForm();
