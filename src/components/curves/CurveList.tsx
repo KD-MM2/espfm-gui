@@ -4,6 +4,7 @@ import { EmptyState } from "../ui/EmptyState";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { MiniCurvePreview } from "./MiniCurvePreview";
 
 interface CurveListProps {
   curves: CurveState[];
@@ -13,8 +14,6 @@ interface CurveListProps {
 }
 
 function CurveCard({ curve, onEdit, onDelete }: { curve: CurveState; onEdit: (curve: CurveState) => void; onDelete: (curve: CurveState) => void }) {
-  const pointsSummary = curve.points.map((p) => `${p.temp_c}C:${p.duty}%`).join(", ");
-
   return (
     <Card className="py-0 gap-0 rounded-lg">
       <CardContent className="p-4">
@@ -26,7 +25,9 @@ function CurveCard({ curve, onEdit, onDelete }: { curve: CurveState; onEdit: (cu
                 {curve.points.length} {curve.points.length === 1 ? "point" : "points"}
               </Badge>
             </div>
-            <div className="mt-2 text-xs text-muted-foreground font-mono">{pointsSummary}</div>
+            <div className="mt-3">
+              <MiniCurvePreview points={curve.points} />
+            </div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1">
