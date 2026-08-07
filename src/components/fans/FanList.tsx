@@ -23,6 +23,9 @@ function FanCard({ fan, curves, onEdit, onDelete, onToggle }: { fan: FanState; c
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h3 className="truncate text-sm font-semibold text-foreground">{fan.name}</h3>
+              <Badge className={`text-[10px] ${fan.mode === "auto" ? "bg-green-50 text-green-700 dark:bg-green-800 dark:text-green-200" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>{fan.mode}</Badge>
+              {fan.inverted && <Badge className="bg-amber-50 text-[10px] text-amber-700 dark:bg-amber-800 dark:text-amber-200">inv</Badge>}
+              {fan.alarm !== "none" && <Badge className="bg-red-50 text-[10px] text-red-700 dark:bg-red-800 dark:text-red-200">{fan.alarm === "stall" ? "Stall" : "Overtemp"}</Badge>}
               {!fan.enabled && <Badge className="bg-gray-100 text-[10px] text-gray-600 dark:bg-gray-800 dark:text-gray-300">Disabled</Badge>}
             </div>
 
@@ -41,9 +44,6 @@ function FanCard({ fan, curves, onEdit, onDelete, onToggle }: { fan: FanState; c
                 <span className="text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">{fan.duty_pct}</span>% duty
                 </span>
-                <Badge className={`text-[10px] ${fan.mode === "auto" ? "bg-green-50 text-green-700 dark:bg-green-800 dark:text-green-200" : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"}`}>{fan.mode}</Badge>
-                {fan.inverted && <Badge className="bg-amber-50 text-[10px] text-amber-700 dark:bg-amber-800 dark:text-amber-200">inv</Badge>}
-                {fan.alarm !== "none" && <Badge className="bg-red-50 text-[10px] text-red-700 dark:bg-red-800 dark:text-red-200">{fan.alarm === "stall" ? "Stall" : "Overtemp"}</Badge>}
               </div>
             </div>
           </div>
@@ -75,7 +75,7 @@ export function FanList({ fans, curves, onEdit, onDelete, onToggle }: FanListPro
   }
 
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(330px,1fr))] gap-3">
       {fans.map((fan) => (
         <FanCard key={fan.slot} fan={fan} curves={curves} onEdit={onEdit} onDelete={onDelete} onToggle={onToggle} />
       ))}
