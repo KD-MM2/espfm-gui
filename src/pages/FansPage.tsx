@@ -189,7 +189,7 @@ export function FansPage() {
       </div>
 
       {/* Fan list */}
-      <FanList fans={fans} onEdit={handleEdit} onDelete={handleDelete} onToggle={handleToggle} />
+      <FanList fans={fans} curves={curves} onEdit={handleEdit} onDelete={handleDelete} onToggle={handleToggle} />
 
       {/* Form dialog */}
       <FanForm

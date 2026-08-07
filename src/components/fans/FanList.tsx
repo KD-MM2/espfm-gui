@@ -1,18 +1,21 @@
 import { Fan, Pencil, Trash2, CheckCircle2, Circle } from "lucide-react";
-import type { FanState } from "../../lib/api";
+import type { FanState, CurveState } from "../../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "../ui/EmptyState";
+import { MiniCurvePreview } from "../curves/MiniCurvePreview";
 
 interface FanListProps {
   fans: FanState[];
+  curves: CurveState[];
   onEdit: (fan: FanState) => void;
   onDelete: (fan: FanState) => void;
   onToggle: (fan: FanState) => void;
 }
 
-function FanCard({ fan, onEdit, onDelete, onToggle }: { fan: FanState; onEdit: (fan: FanState) => void; onDelete: (fan: FanState) => void; onToggle: (fan: FanState) => void }) {
+function FanCard({ fan, curves, onEdit, onDelete, onToggle }: { fan: FanState; curves: CurveState[]; onEdit: (fan: FanState) => void; onDelete: (fan: FanState) => void; onToggle: (fan: FanState) => void }) {
+  const linked = fan.curve_id !== 255 ? curves.find((c) => c.slot === fan.curve_id) : undefined;
   return (
     <Card className={`py-0 rounded-lg gap-0 ${!fan.enabled ? "opacity-60" : ""}`}>
       <CardContent className="p-4">
@@ -57,12 +60,16 @@ function FanCard({ fan, onEdit, onDelete, onToggle }: { fan: FanState; onEdit: (
             </Button>
           </div>
         </div>
+        {/* Mini curve preview — appended after the existing flex row */}
+        <div className="mt-3 border-t border-border pt-3">
+          <MiniCurvePreview points={linked?.points ?? []} />
+        </div>
       </CardContent>
     </Card>
   );
 }
 
-export function FanList({ fans, onEdit, onDelete, onToggle }: FanListProps) {
+export function FanList({ fans, curves, onEdit, onDelete, onToggle }: FanListProps) {
   if (fans.length === 0) {
     return <EmptyState icon={<Fan size={40} />} title="No fans configured" description="Create your first fan to get started" />;
   }
@@ -70,7 +77,7 @@ export function FanList({ fans, onEdit, onDelete, onToggle }: FanListProps) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
       {fans.map((fan) => (
-        <FanCard key={fan.slot} fan={fan} onEdit={onEdit} onDelete={onDelete} onToggle={onToggle} />
+        <FanCard key={fan.slot} fan={fan} curves={curves} onEdit={onEdit} onDelete={onDelete} onToggle={onToggle} />
       ))}
     </div>
   );
