@@ -95,7 +95,7 @@ export function WifiPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid shrink-0 grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Current WiFi Status */}
         <Card className="gap-2 py-0">
           <CardHeader className="px-4 pt-4 pb-0">
@@ -151,8 +151,8 @@ export function WifiPage() {
       </div>
 
       {/* Scan Results */}
-      <div className="mt-6">
-        <h2 className="mb-3 text-sm font-semibold text-foreground">
+      <div className="mt-6 flex min-h-0 flex-1 flex-col">
+        <h2 className="mb-3 shrink-0 text-sm font-semibold text-foreground">
           Available Networks
           {scanResults.length > 0 && <span className="ml-2 text-xs font-normal text-muted-foreground">({scanResults.length} found)</span>}
         </h2>
@@ -164,7 +164,7 @@ export function WifiPage() {
             </CardContent>
           </Card>
         ) : scanResults.length > 0 ? (
-          <Card className="overflow-hidden">
+          <Card className="min-h-0 flex-1 overflow-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -204,8 +204,8 @@ export function WifiPage() {
             </Table>
           </Card>
         ) : (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12">
+          <Card className="min-h-0 flex-1">
+            <CardContent className="flex h-full flex-col items-center justify-center py-12">
               <Wifi size={24} className="mb-2 text-border" />
               <p className="text-sm text-muted-foreground">No scan results. Click Scan to discover networks.</p>
             </CardContent>
