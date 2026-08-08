@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
-import { api, type CurveState } from "../lib/api";
+import type { CurveState } from "../lib/api";
+import { useCurves, useCreateCurve, useUpdateCurve, useDeleteCurve } from "../hooks/queries";
 import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
@@ -20,25 +21,14 @@ interface CurvePoint {
 export function CurvesPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
   const { showToast } = useToast();
-  const [curves, setCurves] = useState<CurveState[]>([]);
+  const { data: curves = [] } = useCurves(activeDeviceId);
+  const createCurve = useCreateCurve(activeDeviceId ?? -1);
+  const updateCurve = useUpdateCurve(activeDeviceId ?? -1);
+  const deleteCurve = useDeleteCurve(activeDeviceId ?? -1);
   const [editingCurve, setEditingCurve] = useState<CurveState | null>(null);
   const [editorPoints, setEditorPoints] = useState<CurvePoint[]>([]);
   const [curveName, setCurveName] = useState("");
   const [showEditor, setShowEditor] = useState(false);
-
-  const fetchCurves = useCallback(async () => {
-    if (activeDeviceId == null) return;
-    try {
-      const data = await api.getCurves(activeDeviceId);
-      setCurves(data);
-    } catch (err) {
-      showToast(`Failed to load curves: ${String(err)}`, "error");
-    }
-  }, [activeDeviceId]);
-
-  useEffect(() => {
-    fetchCurves();
-  }, [fetchCurves]);
 
   function openCreate() {
     setEditingCurve(null);
@@ -71,16 +61,17 @@ export function CurvesPage() {
 
     try {
       if (editingCurve) {
-        const updated = await api.updateCurve(activeDeviceId, editingCurve.slot, { name: curveName.trim(), points: editorPoints });
-        setCurves((prev) => prev.map((c) => (c.slot === updated.slot ? updated : c)));
+        const updated = await updateCurve.mutateAsync({
+          slot: editingCurve.slot,
+          req: { name: curveName.trim(), points: editorPoints }
+        });
         showToast("Curve updated", "success");
         logUserAction(activeDeviceId, "curve", `Curve "${updated.name}" updated`, `slot=${updated.slot}, points=${updated.points.length}`);
       } else {
-        const created = await api.createCurve(activeDeviceId, {
+        const created = await createCurve.mutateAsync({
           name: curveName.trim(),
           points: editorPoints
         });
-        setCurves((prev) => [...prev, created]);
         showToast("Curve created", "success");
         logUserAction(activeDeviceId, "curve", `Curve "${created.name}" created`, `slot=${created.slot}, points=${created.points.length}`);
       }
@@ -94,8 +85,7 @@ export function CurvesPage() {
     if (activeDeviceId == null) return;
     if (!confirm(`Delete curve "${curve.name}"?`)) return;
     try {
-      await api.deleteCurve(activeDeviceId, curve.slot);
-      setCurves((prev) => prev.filter((c) => c.slot !== curve.slot));
+      await deleteCurve.mutateAsync(curve.slot);
       showToast("Curve deleted", "success");
       logUserAction(activeDeviceId, "curve", `Curve "${curve.name}" deleted`, `slot=${curve.slot}`);
     } catch (err) {
