@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Wifi, WifiOff, RefreshCw, Loader2 } from "lucide-react";
-import { api, type WifiAp, type WifiStatus } from "../lib/api";
+import { type WifiAp } from "../lib/api";
+import { useWifiStatus, useWifiScan, useWifiConnect } from "../hooks/queries";
 import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
@@ -14,31 +15,20 @@ export function WifiPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
   const { showToast } = useToast();
   const [scanResults, setScanResults] = useState<WifiAp[]>([]);
-  const [wifiStatus, setWifiStatus] = useState<WifiStatus | null>(null);
   const [scanning, setScanning] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [ssid, setSsid] = useState("");
   const [password, setPassword] = useState("");
 
-  const fetchStatus = useCallback(async () => {
-    if (activeDeviceId == null) return;
-    try {
-      const status = await api.wifiStatus(activeDeviceId);
-      setWifiStatus(status);
-    } catch (e) {
-      showToast(`Failed to get WiFi status: ${String(e)}`, "error");
-    }
-  }, [activeDeviceId, showToast]);
-
-  useEffect(() => {
-    fetchStatus();
-  }, [fetchStatus]);
+  const { data: wifiStatus } = useWifiStatus(activeDeviceId);
+  const scan = useWifiScan(activeDeviceId ?? -1);
+  const connect = useWifiConnect(activeDeviceId ?? -1);
 
   async function handleScan() {
     if (activeDeviceId == null) return;
     setScanning(true);
     try {
-      const results = await api.wifiScan(activeDeviceId);
+      const results = await scan.mutateAsync();
       setScanResults(results);
     } catch (e) {
       showToast(`WiFi scan failed: ${String(e)}`, "error");
@@ -51,9 +41,8 @@ export function WifiPage() {
     if (activeDeviceId == null || !ssid.trim()) return;
     setConnecting(true);
     try {
-      await api.wifiConnect(activeDeviceId, ssid.trim(), password);
+      await connect.mutateAsync({ ssid: ssid.trim(), password });
       logUserAction(activeDeviceId, "system", `WiFi connect to "${ssid.trim()}"`, "");
-      await fetchStatus();
       setSsid("");
       setPassword("");
     } catch (e) {
