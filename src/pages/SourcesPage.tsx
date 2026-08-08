@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState } from "react";
 import { Plus, ScanLine } from "lucide-react";
-import { api, type SourceState, type Ds18b20Device } from "../lib/api";
+import { type SourceState, type Ds18b20Device } from "../lib/api";
+import { useSources, useCreateSource, useUpdateSource, useDeleteSource, useUpdateManualTemp } from "../hooks/queries";
 import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
@@ -14,40 +15,19 @@ const MAX_SOURCE_SLOTS = 8;
 export function SourcesPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
   const { showToast } = useToast();
-  const [sources, setSources] = useState<SourceState[]>([]);
+  const { data: sources = [] } = useSources(activeDeviceId);
+  const createSource = useCreateSource(activeDeviceId ?? -1);
+  const updateSource = useUpdateSource(activeDeviceId ?? -1);
+  const deleteSource = useDeleteSource(activeDeviceId ?? -1);
+  const updateManualTemp = useUpdateManualTemp(activeDeviceId ?? -1);
   const [showForm, setShowForm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [editingSource, setEditingSource] = useState<SourceState | null>(null);
-  const isMounted = useRef(true);
-
-  useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  const fetchSources = useCallback(async () => {
-    if (activeDeviceId == null) return;
-    try {
-      const data = await api.getSources(activeDeviceId);
-      if (isMounted.current) setSources(data);
-    } catch {
-      // Ignore errors after unmount
-    }
-  }, [activeDeviceId]);
-
-  useEffect(() => {
-    fetchSources();
-    const interval = setInterval(fetchSources, 5000);
-    return () => clearInterval(interval);
-  }, [fetchSources]);
 
   async function handleCreate(data: { name: string; source_type: string; gpio?: number; rom_code?: string }) {
     if (activeDeviceId == null) return;
     try {
-      const created = await api.createSource(activeDeviceId, data);
-      setSources((prev) => [...prev, created]);
+      const created = await createSource.mutateAsync(data);
       showToast("Source created", "success");
       logUserAction(activeDeviceId, "source", `Source "${created.name}" created (${created.source_type})`, `slot=${created.slot}`);
       setShowForm(false);
@@ -60,8 +40,7 @@ export function SourcesPage() {
     if (activeDeviceId == null) return;
     if (!confirm(`Delete source "${source.name}"?`)) return;
     try {
-      await api.deleteSource(activeDeviceId, source.slot);
-      setSources((prev) => prev.filter((s) => s.slot !== source.slot));
+      await deleteSource.mutateAsync(source.slot);
       showToast("Source deleted", "success");
       logUserAction(activeDeviceId, "source", `Source "${source.name}" deleted`, `slot=${source.slot}`);
     } catch (err) {
@@ -86,8 +65,7 @@ export function SourcesPage() {
     if (nameChanged && !typeChanged && !gpioChanged && !romChanged) {
       // Only name changed — use updateSource
       try {
-        await api.updateSource(activeDeviceId, editingSource.slot, data.name);
-        setSources((prev) => prev.map((s) => (s.slot === editingSource.slot ? { ...s, name: data.name } : s)));
+        await updateSource.mutateAsync({ slot: editingSource.slot, name: data.name });
         showToast("Source updated", "success");
         logUserAction(activeDeviceId, "source", `Source "${data.name}" renamed`, `slot=${editingSource.slot}`);
         closeForm();
@@ -97,9 +75,8 @@ export function SourcesPage() {
     } else {
       // Other fields changed — delete + recreate
       try {
-        await api.deleteSource(activeDeviceId, editingSource.slot);
-        const created = await api.createSource(activeDeviceId, data);
-        setSources((prev) => prev.map((s) => (s.slot === editingSource.slot ? created : s)));
+        await deleteSource.mutateAsync(editingSource.slot);
+        await createSource.mutateAsync(data);
         showToast("Source recreated", "success");
         logUserAction(activeDeviceId, "source", `Source "${data.name}" recreated (${data.source_type})`, `slot=${editingSource.slot}`);
         closeForm();
@@ -120,8 +97,7 @@ export function SourcesPage() {
   async function handleSetManualTemp(source: SourceState, tempC: number) {
     if (activeDeviceId == null) return;
     try {
-      await api.updateManualTemp(activeDeviceId, source.slot, tempC);
-      setSources((prev) => prev.map((s) => (s.slot === source.slot ? { ...s, temp_c: tempC } : s)));
+      await updateManualTemp.mutateAsync({ slot: source.slot, tempC });
       showToast("Temperature updated", "success");
       logUserAction(activeDeviceId, "source", `Source "${source.name}" temp set to ${tempC}°C`, `slot=${source.slot}`);
     } catch (err) {
@@ -136,14 +112,11 @@ export function SourcesPage() {
     // We need to pass rom_code to the form — use a ref or state
     // For simplicity, create directly
     if (activeDeviceId == null) return;
-    api
-      .createSource(activeDeviceId, {
+    void createSource
+      .mutateAsync({
         name: `DS18B20 ${device.index}`,
         source_type: "DS18B20",
         rom_code: device.rom_code
-      })
-      .then((created) => {
-        setSources((prev) => [...prev, created]);
       })
       .catch((err) => {
         showToast(`Failed to create source from scan: ${String(err)}`, "error");
@@ -201,4 +174,3 @@ export function SourcesPage() {
     </div>
   );
 }
-
