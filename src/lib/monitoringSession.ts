@@ -2,14 +2,16 @@
  * Session-scoped monitoring pipeline manager.
  *
  * Lifecycle is tied to device connection, NOT page navigation.
- * - start(deviceId): restore stores from SQLite, then start realtime Collector
- * - stop(): stop Collector and clear stores
+ * - start(deviceId): restore stores from SQLite, then start realtime queryAdapter
+ * - stop(): stop queryAdapter and clear stores
  *
  * Navigating away from Dashboard does NOT call stop().
  * Only device disconnect or app shutdown calls stop().
  */
 
-import { Collector, loadHistory } from "./collectors";
+import { loadHistory } from "./history";
+import { startQueryAdapter, stopQueryAdapter } from "./queryAdapter";
+import { queryClient } from "./queryClient";
 import { api } from "./api";
 import { useChartStore, startChartStore, stopChartStore } from "../stores/chartStore";
 import { useActivityStore } from "../stores/activityStore";
@@ -19,14 +21,8 @@ import { startActivityDetector, stopActivityDetector, setDetectorDevice } from "
 import { RANGE_MINUTES, type TimeRange } from "./timeSeriesBuffer";
 
 let activeDeviceId: number | null = null;
-let collector: Collector | null = null;
 let initialized = false;
 let generation = 0; // incremented on each start call to detect superseded sessions
-
-/** Get the currently active monitoring device, if any. */
-export function getActiveMonitoringDevice(): number | null {
-  return activeDeviceId;
-}
 
 /**
  * Start the monitoring pipeline for a device.
@@ -68,14 +64,12 @@ export async function startMonitoringSession(deviceId: number, timeRangeMinutes:
   // Direct restore into chart store — idempotent, no EventBus replay
   useChartStore.getState().restore(historySamples);
 
-  // Phase 2: Start realtime Collector (publishes to EventBus going forward)
-  collector = new Collector(deviceId);
-  await collector.start();
+  // Phase 2: Start realtime queryAdapter (publishes to EventBus going forward)
+  startQueryAdapter(queryClient, deviceId);
 
-  // Final check: if superseded during collector start, stop the orphan
+  // Final check: if superseded during adapter start, stop the orphan
   if (gen !== generation) {
-    collector.stop();
-    collector = null;
+    stopQueryAdapter();
     return;
   }
 
@@ -84,10 +78,7 @@ export async function startMonitoringSession(deviceId: number, timeRangeMinutes:
 
 /** Stop the monitoring session. Clears subscribers and stores. */
 export function stopMonitoringSession(): void {
-  if (collector) {
-    collector.stop();
-    collector = null;
-  }
+  stopQueryAdapter();
   stopChartStore();
   stopSqliteWriter();
   stopActivityDetector();
