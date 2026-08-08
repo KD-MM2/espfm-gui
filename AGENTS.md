@@ -51,6 +51,16 @@ There is **no test framework** configured (frontend or Rust). Typecheck + build 
 
 All pages use `flex h-full flex-col`; the Layout shell uses `flex h-screen overflow-hidden`.
 
+### Data layer (TanStack Query)
+
+TanStack Query owns all device server-state. The old `Collector` class (manual `setInterval` polling) was removed — the query hooks' `refetchInterval` plus the `queryAdapter` replace it.
+
+- **`src/hooks/queries.ts`** — `queryKeys` factory (per-device keys like `["fans", deviceId]`) + `useQuery`/`useMutation` hooks for all entity reads/writes. Mutations invalidate their key on success.
+- **`refetchInterval`** — realtime entity queries poll at fixed intervals: fans `2000ms`, sources `10000ms`, system `30000ms`. Curves, schedules, wifi, etc. are non-realtime (fetched on demand).
+- **`src/lib/queryAdapter.ts`** — a non-React adapter that subscribes to the TanStack Query cache (`queryClient.getQueryCache().subscribe()`) and publishes a consolidated `FanSample` to the eventBus for the active device. Started/stopped by `monitoringSession` via `startQueryAdapter`/`stopQueryAdapter`.
+- **Streaming layer unchanged** — the eventBus (`src/lib/events.ts`) plus `chartStore`/`sqliteWriter`/`activityDetector` remain the realtime streaming pipeline, consuming `FanSample` events.
+- **Router** — `src/App.tsx` uses react-router v7 `createBrowserRouter` + `RouterProvider` (routes declared in `createBrowserRouter([...])`).
+
 ### Backend (Rust)
 
 | File                       | Responsibility                                                   |
