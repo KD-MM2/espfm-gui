@@ -1,14 +1,14 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useEffect, useCallback, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FanTempChart } from "../components/dashboard/FanTempChart";
 import { SystemInfoCard } from "../components/dashboard/SystemInfoCard";
 import { ActivityLog } from "../components/dashboard/ActivityLog";
-import { api, type SystemInfo, type SourceState, type CurveState, type ScheduleState, type WifiStatus } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useChartStore } from "../stores/chartStore";
 import { useActivityStore } from "../stores/activityStore";
 import { startMonitoringSession, changeTimeRange } from "../lib/monitoringSession";
 import { RANGE_MINUTES, type TimeRange } from "../lib/timeSeriesBuffer";
+import { useSystemInfo, useSources, useCurves, useSchedules, useWifiStatus } from "../hooks/queries";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -32,11 +32,11 @@ export function DashboardPage() {
     return activityEntries.filter((e) => new Date(e.ts).getTime() >= cutoff);
   }, [activityEntries, timeRange]);
 
-  const [systemInfo, setSystemInfo] = useState<SystemInfo | null>(null);
-  const [sources, setSources] = useState<SourceState[]>([]);
-  const [curves, setCurves] = useState<CurveState[]>([]);
-  const [schedules, setSchedules] = useState<ScheduleState[]>([]);
-  const [wifiStatus, setWifiStatus] = useState<WifiStatus | null>(null);
+  const { data: systemInfo } = useSystemInfo(activeDeviceId);
+  const { data: sources = [] } = useSources(activeDeviceId);
+  const { data: curves = [] } = useCurves(activeDeviceId);
+  const { data: schedules = [] } = useSchedules(activeDeviceId);
+  const { data: wifiStatus } = useWifiStatus(activeDeviceId);
 
   // Start/restore monitoring session (session-scoped, survives navigation)
   useEffect(() => {
@@ -49,47 +49,6 @@ export function DashboardPage() {
   const handleTimeRangeChange = useCallback((range: TimeRange) => {
     void changeTimeRange(range);
   }, []);
-
-  // System info polling
-  const fetchSystemInfo = useCallback(async () => {
-    if (!activeDeviceId) return;
-    try {
-      const info = await api.getSystemInfo(activeDeviceId);
-      setSystemInfo(info);
-    } catch (e) {
-      console.warn("System info fetch failed:", e);
-    }
-  }, [activeDeviceId]);
-
-  // Additional data polling (sources, curves, schedules, wifi)
-  const fetchAdditionalData = useCallback(async () => {
-    if (!activeDeviceId) return;
-    try {
-      const [src, crv, sch, wifi] = await Promise.all([api.getSources(activeDeviceId), api.getCurves(activeDeviceId), api.getSchedules(activeDeviceId), api.wifiStatus(activeDeviceId)]);
-      setSources(src);
-      setCurves(crv);
-      setSchedules(sch);
-      setWifiStatus(wifi);
-    } catch (e) {
-      console.warn("Dashboard additional data fetch failed:", e);
-    }
-  }, [activeDeviceId]);
-
-  // Poll system info and additional data
-  useEffect(() => {
-    if (!activeDeviceId) return;
-
-    fetchSystemInfo();
-    fetchAdditionalData();
-
-    const sysInterval = setInterval(fetchSystemInfo, 30000);
-    const extraInterval = setInterval(fetchAdditionalData, 10000);
-
-    return () => {
-      clearInterval(sysInterval);
-      clearInterval(extraInterval);
-    };
-  }, [activeDeviceId, fetchSystemInfo, fetchAdditionalData]);
 
   // Format uptime
   function formatUptime(secs: number): string {
