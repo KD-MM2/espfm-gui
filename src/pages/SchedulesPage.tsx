@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
-import { api, type ScheduleState, type FanState } from "../lib/api";
+import { api, type ScheduleState } from "../lib/api";
+import { useSchedules, useFans, useCreateSchedule, useUpdateSchedule, useDeleteSchedule } from "../hooks/queries";
 import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
@@ -13,41 +14,18 @@ const MAX_SCHEDULE_SLOTS = 8;
 export function SchedulesPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
   const { showToast } = useToast();
-  const [schedules, setSchedules] = useState<ScheduleState[]>([]);
-  const [fans, setFans] = useState<FanState[]>([]);
+  const { data: schedules = [] } = useSchedules(activeDeviceId);
+  const { data: fans = [] } = useFans(activeDeviceId);
+  const createSchedule = useCreateSchedule(activeDeviceId ?? -1);
+  const updateSchedule = useUpdateSchedule(activeDeviceId ?? -1);
+  const deleteSchedule = useDeleteSchedule(activeDeviceId ?? -1);
   const [showForm, setShowForm] = useState(false);
   const [editingSchedule, setEditingSchedule] = useState<ScheduleState | null>(null);
-
-  const fetchSchedules = useCallback(async () => {
-    if (activeDeviceId == null) return;
-    try {
-      const data = await api.getSchedules(activeDeviceId);
-      setSchedules(data);
-    } catch (err) {
-      showToast(`Failed to load schedules: ${String(err)}`, "error");
-    }
-  }, [activeDeviceId]);
-
-  const fetchFans = useCallback(async () => {
-    if (activeDeviceId == null) return;
-    try {
-      const data = await api.getFans(activeDeviceId);
-      setFans(data);
-    } catch (err) {
-      // Non-critical; fan names will fall back to slot IDs
-    }
-  }, [activeDeviceId]);
-
-  useEffect(() => {
-    fetchSchedules();
-    fetchFans();
-  }, [fetchSchedules, fetchFans]);
 
   async function handleCreate(data: { fan_id: number; duty: number; start_min: number; end_min: number; enabled: boolean }) {
     if (activeDeviceId == null) return;
     try {
-      const created = await api.createSchedule(activeDeviceId, data);
-      setSchedules((prev) => [...prev, created]);
+      const created = await createSchedule.mutateAsync(data);
       showToast("Schedule created", "success");
       logUserAction(activeDeviceId, "schedule", `Schedule created (fan ${data.fan_id}, ${data.duty}%)`, `slot=${created.slot}`);
       closeForm();
@@ -72,8 +50,7 @@ export function SchedulesPage() {
         closeForm();
         return;
       }
-      const updated = await api.updateSchedule(activeDeviceId, s.slot, update);
-      setSchedules((prev) => prev.map((x) => (x.slot === updated.slot ? updated : x)));
+      const updated = await updateSchedule.mutateAsync({ slot: s.slot, req: update });
       showToast("Schedule updated", "success");
       logUserAction(activeDeviceId, "schedule", `Schedule updated (fan ${data.fan_id}, ${data.duty}%)`, `slot=${updated.slot}`);
       closeForm();
@@ -86,8 +63,7 @@ export function SchedulesPage() {
     if (activeDeviceId == null) return;
     if (!confirm("Delete this schedule?")) return;
     try {
-      await api.deleteSchedule(activeDeviceId, schedule.slot);
-      setSchedules((prev) => prev.filter((s) => s.slot !== schedule.slot));
+      await deleteSchedule.mutateAsync(schedule.slot);
       showToast("Schedule deleted", "success");
       logUserAction(activeDeviceId, "schedule", `Schedule deleted (fan ${schedule.fan_id})`, `slot=${schedule.slot}`);
     } catch (err) {
@@ -98,8 +74,7 @@ export function SchedulesPage() {
   async function handleToggle(schedule: ScheduleState) {
     if (activeDeviceId == null) return;
     try {
-      const updated = await api.updateSchedule(activeDeviceId, schedule.slot, { enabled: !schedule.enabled });
-      setSchedules((prev) => prev.map((s) => (s.slot === updated.slot ? updated : s)));
+      await updateSchedule.mutateAsync({ slot: schedule.slot, req: { enabled: !schedule.enabled } });
       showToast(schedule.enabled ? "Schedule disabled" : "Schedule enabled", "success");
       logUserAction(activeDeviceId, "schedule", `Schedule ${!schedule.enabled ? "enabled" : "disabled"} (fan ${schedule.fan_id})`, `slot=${schedule.slot}`);
     } catch (err) {
