@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { Toaster } from "@/components/ui/sonner";
 import { Layout } from "./components/layout/Layout";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -11,24 +11,28 @@ import { SystemPage } from "./pages/SystemPage";
 import { DevicesPage } from "./pages/DevicesPage";
 import { LogsPage } from "./pages/LogsPage";
 
+const router = createBrowserRouter([
+  {
+    element: <Layout />,
+    children: [
+      { path: "/", element: <DashboardPage /> },
+      { path: "/fans", element: <FansPage /> },
+      { path: "/sources", element: <SourcesPage /> },
+      { path: "/curves", element: <CurvesPage /> },
+      { path: "/schedules", element: <SchedulesPage /> },
+      { path: "/wifi", element: <WifiPage /> },
+      { path: "/system", element: <SystemPage /> },
+      { path: "/logs", element: <LogsPage /> },
+      { path: "/devices", element: <DevicesPage /> },
+    ],
+  },
+]);
+
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/fans" element={<FansPage />} />
-          <Route path="/sources" element={<SourcesPage />} />
-          <Route path="/curves" element={<CurvesPage />} />
-          <Route path="/schedules" element={<SchedulesPage />} />
-          <Route path="/wifi" element={<WifiPage />} />
-          <Route path="/system" element={<SystemPage />} />
-          <Route path="/logs" element={<LogsPage />} />
-          <Route path="/devices" element={<DevicesPage />} />
-        </Route>
-      </Routes>
+    <>
+      <RouterProvider router={router} />
       <Toaster />
-    </BrowserRouter>
+    </>
   );
 }
-
