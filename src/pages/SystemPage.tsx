@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useRef } from "react";
 import { Loader2, RotateCcw, Download, Upload, Server } from "lucide-react";
-import { api, type SystemInfo } from "../lib/api";
+import { api } from "../lib/api";
 import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
+import { useSystemInfo, useSetHostname, useReboot } from "../hooks/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,11 +33,12 @@ function formatBytes(bytes: number): string {
 export function SystemPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
   const { showToast } = useToast();
-  const [info, setInfo] = useState<SystemInfo | null>(null);
-  const [loading, setLoading] = useState(false);
+  const { data: info, isLoading: loading, refetch: refetchInfo } = useSystemInfo(activeDeviceId);
+  const hostnameMutation = useSetHostname(activeDeviceId ?? -1);
+  const reboot = useReboot(activeDeviceId ?? -1);
 
   // Hostname form
-  const [hostname, setHostname] = useState("");
+  const [hostname, setHostname] = useState(info?.hostname ?? "");
   const [settingHostname, setSettingHostname] = useState(false);
 
   // Reboot
@@ -50,32 +52,13 @@ export function SystemPage() {
   const [importing, setImporting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const fetchInfo = useCallback(async () => {
-    if (activeDeviceId == null) return;
-    setLoading(true);
-    try {
-      const data = await api.getSystemInfo(activeDeviceId);
-      setInfo(data);
-      setHostname(data.hostname);
-    } catch (e) {
-      showToast(`Failed to get system info: ${String(e)}`, "error");
-    } finally {
-      setLoading(false);
-    }
-  }, [activeDeviceId, showToast]);
-
-  useEffect(() => {
-    fetchInfo();
-  }, [fetchInfo]);
-
   async function handleSetHostname() {
     if (activeDeviceId == null || !hostname.trim()) return;
     setSettingHostname(true);
     try {
-      await api.setHostname(activeDeviceId, hostname.trim());
+      await hostnameMutation.mutateAsync(hostname.trim());
       showToast("Hostname set", "success");
       logUserAction(activeDeviceId, "system", `Hostname set to "${hostname.trim()}"`, "");
-      await fetchInfo();
     } catch (e) {
       showToast(`Failed to set hostname: ${String(e)}`, "error");
     } finally {
@@ -87,7 +70,7 @@ export function SystemPage() {
     if (activeDeviceId == null) return;
     setRebooting(true);
     try {
-      await api.rebootDevice(activeDeviceId);
+      await reboot.mutateAsync();
       showToast("Device rebooting...", "success");
       logUserAction(activeDeviceId, "system", "Device reboot initiated", "");
       setShowRebootDialog(false);
@@ -135,7 +118,6 @@ export function SystemPage() {
       const text = await importFile.text();
       await api.importConfig(activeDeviceId, text);
       showToast("Config imported", "success");
-      await fetchInfo();
       setImportFile(null);
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
@@ -155,7 +137,7 @@ export function SystemPage() {
           <h1 className="text-xl font-semibold text-foreground">System</h1>
           <p className="mt-1 text-xs text-muted-foreground">Device information and configuration</p>
         </div>
-        <Button variant="outline" onClick={fetchInfo} disabled={loading || activeDeviceId == null}>
+        <Button variant="outline" onClick={() => void refetchInfo()} disabled={loading || activeDeviceId == null}>
           {loading ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
           Refresh
         </Button>
