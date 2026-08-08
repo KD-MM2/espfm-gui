@@ -1,6 +1,7 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Plus } from "lucide-react";
-import { api, type FanState, type SourceState, type CurveState, type ScheduleState } from "../lib/api";
+import { api, type FanState } from "../lib/api";
+import { useFans, useSources, useCurves, useSchedules, useCreateFan, useUpdateFan, useDeleteFan } from "../hooks/queries";
 import { logUserAction } from "../lib/logUserAction";
 import { useDeviceStore } from "../stores/deviceStore";
 import { useToast } from "@/hooks/use-toast";
@@ -13,69 +14,42 @@ const MAX_FAN_SLOTS = 8;
 export function FansPage() {
   const activeDeviceId = useDeviceStore((s) => s.activeDeviceId);
   const { showToast } = useToast();
-  const [fans, setFans] = useState<FanState[]>([]);
-  const [sources, setSources] = useState<SourceState[]>([]);
-  const [curves, setCurves] = useState<CurveState[]>([]);
-  const [schedules, setSchedules] = useState<ScheduleState[]>([]);
+  const { data: fans = [] } = useFans(activeDeviceId);
+  const { data: sources = [] } = useSources(activeDeviceId);
+  const { data: curves = [] } = useCurves(activeDeviceId);
+  const { data: schedules = [] } = useSchedules(activeDeviceId);
+  const createFan = useCreateFan(activeDeviceId ?? -1);
+  const updateFan = useUpdateFan(activeDeviceId ?? -1);
+  const deleteFan = useDeleteFan(activeDeviceId ?? -1);
   const [showForm, setShowForm] = useState(false);
   const [editingFan, setEditingFan] = useState<FanState | null>(null);
-
-  const fetchFans = useCallback(async () => {
-    if (activeDeviceId == null) return;
-    try {
-      const data = await api.getFans(activeDeviceId);
-      setFans(data);
-    } catch (err) {
-      showToast(`Failed to load fans: ${String(err)}`, "error");
-    }
-  }, [activeDeviceId]);
-
-  useEffect(() => {
-    fetchFans();
-  }, [fetchFans]);
-
-  useEffect(() => {
-    if (activeDeviceId == null) return;
-    api
-      .getSources(activeDeviceId)
-      .then(setSources)
-      .catch(() => {});
-    api
-      .getCurves(activeDeviceId)
-      .then(setCurves)
-      .catch(() => {});
-    api
-      .getSchedules(activeDeviceId)
-      .then(setSchedules)
-      .catch(() => {});
-  }, [activeDeviceId]);
 
   async function handleCreate(data: FanFormData) {
     if (activeDeviceId == null) return;
     try {
-      const created = await api.createFan(activeDeviceId, {
+      const created = await createFan.mutateAsync({
         name: data.name,
         pwm_gpio: data.pwm_gpio,
         tach_gpio: data.tach_gpio
       });
       const needsUpdate = data.mode !== "manual" || data.duty !== 50 || data.inverted || !data.enabled || data.source_id !== 255 || data.curve_id !== 255 || data.schedule_id !== 255 || data.group_id !== 0;
-
-      let final = created;
       if (needsUpdate) {
-        final = await api.updateFan(activeDeviceId, created.slot, {
-          mode: data.mode,
-          duty: data.duty,
-          inverted: data.inverted,
-          enabled: data.enabled,
-          source_id: data.source_id !== 255 ? data.source_id : undefined,
-          curve_id: data.curve_id !== 255 ? data.curve_id : undefined,
-          schedule_id: data.schedule_id !== 255 ? data.schedule_id : undefined,
-          group_id: data.group_id !== 0 ? data.group_id : undefined
+        await updateFan.mutateAsync({
+          slot: created.slot,
+          req: {
+            mode: data.mode,
+            duty: data.duty,
+            inverted: data.inverted,
+            enabled: data.enabled,
+            source_id: data.source_id !== 255 ? data.source_id : undefined,
+            curve_id: data.curve_id !== 255 ? data.curve_id : undefined,
+            schedule_id: data.schedule_id !== 255 ? data.schedule_id : undefined,
+            group_id: data.group_id !== 0 ? data.group_id : undefined
+          }
         });
       }
-      setFans((prev) => [...prev, final]);
       showToast("Fan created", "success");
-      logUserAction(activeDeviceId, "fan", `Fan "${final.name}" created`, `slot=${final.slot}`);
+      logUserAction(activeDeviceId, "fan", `Fan "${data.name}" created`, "");
       closeForm();
     } catch (err) {
       showToast(`Failed to create fan: ${String(err)}`, "error");
@@ -111,10 +85,9 @@ export function FansPage() {
         closeForm();
         return;
       }
-      const updated = await api.updateFan(activeDeviceId, fan.slot, update);
-      setFans((prev) => prev.map((f) => (f.slot === updated.slot ? updated : f)));
+      await updateFan.mutateAsync({ slot: fan.slot, req: update });
       showToast("Fan updated", "success");
-      logUserAction(activeDeviceId, "fan", `Fan "${updated.name}" updated`, `slot=${updated.slot}`);
+      logUserAction(activeDeviceId, "fan", `Fan "${fan.name}" updated`, `slot=${fan.slot}`);
       closeForm();
     } catch (err) {
       showToast(`Failed to update fan: ${String(err)}`, "error");
@@ -124,10 +97,7 @@ export function FansPage() {
   async function handleToggle(fan: FanState) {
     if (activeDeviceId == null) return;
     try {
-      const updated = await api.updateFan(activeDeviceId, fan.slot, {
-        enabled: !fan.enabled
-      });
-      setFans((prev) => prev.map((f) => (f.slot === updated.slot ? updated : f)));
+      await updateFan.mutateAsync({ slot: fan.slot, req: { enabled: !fan.enabled } });
       showToast(fan.enabled ? "Fan disabled" : "Fan enabled", "success");
       logUserAction(activeDeviceId, "fan", `Fan "${fan.name}" ${!fan.enabled ? "enabled" : "disabled"}`, `slot=${fan.slot}`);
     } catch (err) {
@@ -139,8 +109,7 @@ export function FansPage() {
     if (activeDeviceId == null) return;
     if (!confirm(`Delete fan "${fan.name}"?`)) return;
     try {
-      await api.deleteFan(activeDeviceId, fan.slot);
-      setFans((prev) => prev.filter((f) => f.slot !== fan.slot));
+      await deleteFan.mutateAsync(fan.slot);
       showToast("Fan deleted", "success");
       logUserAction(activeDeviceId, "fan", `Fan "${fan.name}" deleted`, `slot=${fan.slot}`);
     } catch (err) {
@@ -206,4 +175,3 @@ export function FansPage() {
     </div>
   );
 }
-
