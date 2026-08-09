@@ -17,7 +17,8 @@ class EventBus {
       try {
         handler(sample);
       } catch (e) {
-        console.error("EventBus handler error:", e);
+        const err = e instanceof Error ? e : new Error(String(e));
+        console.error("EventBus handler error:", err.message, err.stack);
       }
     }
   }

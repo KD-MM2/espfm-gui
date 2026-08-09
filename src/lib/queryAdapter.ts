@@ -30,6 +30,13 @@ export function startQueryAdapter(client: QueryClient, deviceId: number): void {
   latest.system = undefined;
 
   unsubscribe = client.getQueryCache().subscribe((event) => {
+    // Only react to actual data updates, NOT observer lifecycle events
+    // (observerAdded/observerResultsUpdated/observerRemoved). Those fire when
+    // React re-renders (e.g. after chartStore.set), and publishing on them
+    // creates a feedback loop: set() → re-render → observer notify → publish →
+    // chartStore.set() → re-render → ... → "Maximum update depth exceeded".
+    if (event.type !== "updated") return;
+
     const key = event.query.queryKey;
     const kind = key[0];
     const dev = key[1];

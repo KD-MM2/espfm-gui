@@ -16,6 +16,9 @@ function handleSample(sample: FanSample): void {
   if (activeDeviceId == null) return;
 
   for (const fan of sample.fans) {
+    // Defensive: a malformed sample (e.g. duty undefined) must not throw and
+    // take down the whole eventBus loop for other subscribers.
+    if (typeof fan.duty !== "number") continue;
     const prev = prevDuties.get(fan.id);
     if (prev !== undefined && prev !== fan.duty) {
       const msg = `${fan.name} duty → ${fan.duty.toFixed(0)}%`;
