@@ -13,15 +13,17 @@ interface SourceFormProps {
   onOpenChange: (open: boolean) => void;
   onSubmit: (data: { name: string; source_type: string; gpio?: number; rom_code?: string }) => void;
   initialData?: SourceState | null;
+  /** True when editing an existing source. A scanner prefill has initialData
+   *  set but is still a CREATE — pass isEdit=false so the dialog says "Create". */
+  isEdit?: boolean;
 }
 
-export function SourceForm({ open, onOpenChange, onSubmit, initialData }: SourceFormProps) {
+export function SourceForm({ open, onOpenChange, onSubmit, initialData, isEdit = initialData != null }: SourceFormProps) {
   const [name, setName] = useState(initialData?.name ?? "");
   const [sourceType, setSourceType] = useState<string>(initialData?.source_type ?? SOURCE_TYPE_OPTIONS[0]);
   const [gpio, setGpio] = useState<string>(initialData?.gpio != null && initialData.gpio < 255 ? String(initialData.gpio) : "");
   const [romCode, setRomCode] = useState<string>(initialData?.rom_code ?? "");
 
-  const isEdit = initialData != null;
   const showGpio = sourceType === "NTC";
   const showRomCode = sourceType === "DS18B20";
 

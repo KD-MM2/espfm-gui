@@ -23,6 +23,9 @@ export function SourcesPage() {
   const [showForm, setShowForm] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [editingSource, setEditingSource] = useState<SourceState | null>(null);
+  // Prefilled draft from the DS18B20 scanner. Separate from editingSource so
+  // the form shows "Create Source" and routes to create, not edit.
+  const [scannerPrefill, setScannerPrefill] = useState<SourceState | null>(null);
 
   async function handleCreate(data: { name: string; source_type: string; gpio?: number; rom_code?: string }) {
     if (activeDeviceId == null) return;
@@ -107,25 +110,28 @@ export function SourcesPage() {
 
   function handleAssignFromScanner(device: Ds18b20Device) {
     setShowScanner(false);
-    // Pre-fill form with scanned device data
-    setShowForm(true);
-    // We need to pass rom_code to the form — use a ref or state
-    // For simplicity, create directly
+    // Pre-fill the create-source form with the scanned device data (ROM code
+    // included), then let the user review + confirm. Previously this created
+    // the source directly AND opened an empty form, which (a) left the ROM
+    // field blank and (b) created a duplicate source when the form was submitted.
     if (activeDeviceId == null) return;
-    void createSource
-      .mutateAsync({
-        name: `DS18B20 ${device.index}`,
-        source_type: "DS18B20",
-        rom_code: device.rom_code
-      })
-      .catch((err) => {
-        showToast(`Failed to create source from scan: ${String(err)}`, "error");
-      });
+    setScannerPrefill({
+      slot: device.index,
+      name: `DS18B20 ${device.index}`,
+      source_type: "DS18B20",
+      temp_c: device.temp_c,
+      rom_code: device.rom_code,
+      status: "valid",
+      gpio: 255
+    });
+    setEditingSource(null);
+    setShowForm(true);
   }
 
   function closeForm() {
     setShowForm(false);
     setEditingSource(null);
+    setScannerPrefill(null);
   }
 
   return (
@@ -145,6 +151,7 @@ export function SourcesPage() {
           </Button>
           <Button
             onClick={() => {
+              setScannerPrefill(null);
               setEditingSource(null);
               setShowForm(true);
             }}
@@ -166,7 +173,8 @@ export function SourcesPage() {
           if (!open) closeForm();
         }}
         onSubmit={handleFormSubmit}
-        initialData={editingSource}
+        initialData={scannerPrefill ?? editingSource}
+        isEdit={editingSource != null}
       />
 
       {/* Scanner modal */}
