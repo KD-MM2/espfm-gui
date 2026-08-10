@@ -82,11 +82,16 @@ export function DevicesPage() {
     await handleConnect(addr);
   }
 
-  async function handleDisconnect(id: number) {
+  async function handleDisconnect(device: { id: number; connected: boolean }) {
     try {
-      await api.disconnectDevice(id);
-      removeDevice(id);
-      if (id === activeDeviceId) {
+      // Only call the backend if the device was actually connected. A placeholder
+      // (failed auto-connect) device has connected=false and no backend
+      // connection — disconnect_device would fail with "not connected".
+      if (device.connected) {
+        await api.disconnectDevice(device.id);
+      }
+      removeDevice(device.id);
+      if (device.id === activeDeviceId) {
         setConnectionStatus("disconnected");
         await api.deleteAppState("last_active_device");
       }
@@ -141,7 +146,7 @@ export function DevicesPage() {
                           Select
                         </Button>
                       )}
-                      <Button variant="ghost" size="icon" onClick={() => handleDisconnect(device.id)} title="Disconnect" className="hover:bg-destructive/10 hover:text-destructive">
+                      <Button variant="ghost" size="icon" onClick={() => handleDisconnect(device)} title="Disconnect" className="hover:bg-destructive/10 hover:text-destructive">
                         <Unplug size={14} />
                       </Button>
                     </div>

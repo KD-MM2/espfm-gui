@@ -2,6 +2,11 @@ import { useEffect } from "react";
 import { api } from "../lib/api";
 import { useDeviceStore } from "../stores/deviceStore";
 
+// Ids for placeholder (failed auto-connect) devices. Must stay within u32 so a
+// later disconnect_device(id) call doesn't reject them. Date.now() is ~1.7e12,
+// which exceeds u32::MAX (~4.29e9) and fails Tauri arg validation.
+let placeholderId = 0xFFFF_FF00;
+
 /**
  * Auto-connect to the last active device on app startup.
  * Runs once from Layout (always mounted), not from DevicesPage.
@@ -77,7 +82,7 @@ export function useAutoConnect(): void {
         } catch {
           if (cancelled) return;
           addDevice({
-            id: Date.now(),
+            id: placeholderId++,
             hostname: saved.hostname,
             ipAddress: addr,
             connected: false
