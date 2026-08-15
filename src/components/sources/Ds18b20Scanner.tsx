@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { api, type Ds18b20Device } from "../../lib/api";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,28 @@ export function Ds18b20Scanner({ open, onOpenChange, deviceId, onAssign }: Ds18b
   const [scanned, setScanned] = useState(false);
   const [busGpio, setBusGpio] = useState("");
   const [configuring, setConfiguring] = useState(false);
+  const [configured, setConfigured] = useState(false);
+  const [editing, setEditing] = useState(false);
+
+  const gpioKey = `ds18b20_gpio_${deviceId}`;
+
+  // Load saved GPIO from app state when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    setEditing(false);
+    api.getAppState(gpioKey).then((saved) => {
+      if (saved) {
+        setBusGpio(saved);
+        setConfigured(true);
+      } else {
+        setBusGpio("");
+        setConfigured(false);
+      }
+    }).catch(() => {
+      setBusGpio("");
+      setConfigured(false);
+    });
+  }, [open, gpioKey]);
 
   async function handleScan() {
     setScanning(true);
@@ -45,6 +67,9 @@ export function Ds18b20Scanner({ open, onOpenChange, deviceId, onAssign }: Ds18b
     setConfiguring(true);
     try {
       await api.configDs18b20(deviceId, gpio);
+      await api.saveAppState(gpioKey, String(gpio));
+      setConfigured(true);
+      setEditing(false);
       showToast(`DS18B20 bus GPIO set to ${gpio}`, "success");
     } catch (e) {
       showToast(`Failed to configure DS18B20 GPIO: ${String(e)}`, "error");
@@ -65,11 +90,27 @@ export function Ds18b20Scanner({ open, onOpenChange, deviceId, onAssign }: Ds18b
           <div className="flex items-end gap-2">
             <div className="flex-1">
               <Label htmlFor="ds18b20-bus-gpio">Bus GPIO</Label>
-              <Input id="ds18b20-bus-gpio" type="number" min={0} max={48} value={busGpio} onChange={(e) => setBusGpio(e.target.value)} placeholder="e.g. 4" className="mt-1" />
+              <Input
+                id="ds18b20-bus-gpio"
+                type="number"
+                min={0}
+                max={48}
+                value={busGpio}
+                onChange={(e) => setBusGpio(e.target.value)}
+                placeholder="e.g. 4"
+                readOnly={configured && !editing}
+                className="mt-1"
+              />
             </div>
-            <Button variant="outline" onClick={handleConfigureGpio} disabled={configuring || !busGpio.trim()}>
-              {configuring ? "Setting..." : "Configure"}
-            </Button>
+            {configured && !editing ? (
+              <Button variant="outline" onClick={() => setEditing(true)}>
+                Change
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={handleConfigureGpio} disabled={configuring || !busGpio.trim()}>
+                {configuring ? "Setting..." : "Configure"}
+              </Button>
+            )}
           </div>
 
           {/* Scan button */}
