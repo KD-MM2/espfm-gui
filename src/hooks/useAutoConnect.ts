@@ -13,6 +13,7 @@ let placeholderId = 0xFFFF_FF00;
  */
 export function useAutoConnect(): void {
   const addDevice = useDeviceStore((s) => s.addDevice);
+  const updateDevice = useDeviceStore((s) => s.updateDevice);
   const setActiveDevice = useDeviceStore((s) => s.setActiveDevice);
   const setConnectionStatus = useDeviceStore((s) => s.setConnectionStatus);
 
@@ -28,7 +29,7 @@ export function useAutoConnect(): void {
         for (const sd of savedDevices) {
           const addr = `${sd.ip_address}:${sd.port}`;
           const existing = useDeviceStore.getState().devices.find((d) => d.ipAddress === addr);
-          if (existing) continue;
+          if (existing?.connected) continue;
           try {
             const result = (await api.connectDevice(addr)) as {
               id: number;
@@ -37,12 +38,22 @@ export function useAutoConnect(): void {
               port: number;
             };
             if (cancelled) return;
-            addDevice({
-              id: result.id,
-              hostname: result.hostname,
-              ipAddress: `${result.ip}:${result.port}`,
-              connected: true
-            });
+            const connectedAddr = `${result.ip}:${result.port}`;
+            if (existing) {
+              updateDevice(connectedAddr, {
+                id: result.id,
+                hostname: result.hostname,
+                ipAddress: connectedAddr,
+                connected: true
+              });
+            } else {
+              addDevice({
+                id: result.id,
+                hostname: result.hostname,
+                ipAddress: connectedAddr,
+                connected: true
+              });
+            }
             api.saveDeviceInfo(result.hostname, result.ip, result.port).catch(() => {});
           } catch {
             if (cancelled) return;
@@ -86,10 +97,11 @@ export function useAutoConnect(): void {
                 port: number;
               };
               if (cancelled) return;
-              addDevice({
+              const addr = `${result.ip}:${result.port}`;
+              updateDevice(addr, {
                 id: result.id,
                 hostname: result.hostname,
-                ipAddress: `${result.ip}:${result.port}`,
+                ipAddress: addr,
                 connected: true
               });
               setActiveDevice(result.id);

@@ -13,6 +13,7 @@ interface DeviceStore {
   connectionStatus: "connected" | "reconnecting" | "disconnected";
   setDevices: (devices: Device[]) => void;
   addDevice: (device: Device) => void;
+  updateDevice: (ipAddress: string, device: Device) => void;
   removeDevice: (id: number) => void;
   setActiveDevice: (id: number | null) => void;
   setConnectionStatus: (status: "connected" | "reconnecting" | "disconnected") => void;
@@ -30,6 +31,10 @@ export const useDeviceStore = create<DeviceStore>((set) => ({
       if (exists) return state;
       return { devices: [...state.devices, device] };
     }),
+  updateDevice: (ipAddress, device) =>
+    set((state) => ({
+      devices: state.devices.map((d) => (d.ipAddress === ipAddress ? device : d))
+    })),
   removeDevice: (id) =>
     set((state) => ({
       devices: state.devices.filter((d) => d.id !== id),
