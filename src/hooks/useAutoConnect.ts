@@ -19,7 +19,46 @@ export function useAutoConnect(): void {
   useEffect(() => {
     let cancelled = false;
 
-    async function restoreDevice() {
+    async function restoreDevices() {
+      // 1. Restore all previously saved devices
+      let lastActiveAddr: string | null = null;
+      try {
+        const savedDevices = await api.getSavedDevices();
+        if (cancelled) return;
+        for (const sd of savedDevices) {
+          const addr = `${sd.ip_address}:${sd.port}`;
+          const existing = useDeviceStore.getState().devices.find((d) => d.ipAddress === addr);
+          if (existing) continue;
+          try {
+            const result = (await api.connectDevice(addr)) as {
+              id: number;
+              hostname: string;
+              ip: string;
+              port: number;
+            };
+            if (cancelled) return;
+            addDevice({
+              id: result.id,
+              hostname: result.hostname,
+              ipAddress: `${result.ip}:${result.port}`,
+              connected: true
+            });
+            api.saveDeviceInfo(result.hostname, result.ip, result.port).catch(() => {});
+          } catch {
+            if (cancelled) return;
+            addDevice({
+              id: placeholderId++,
+              hostname: sd.hostname,
+              ipAddress: addr,
+              connected: false
+            });
+          }
+        }
+      } catch {
+        // No saved devices — first launch
+      }
+
+      // 2. Restore last active device selection
       try {
         const lastDeviceJson = await api.getAppState("last_active_device");
         if (!lastDeviceJson || cancelled) return;
@@ -29,14 +68,18 @@ export function useAutoConnect(): void {
           port: number;
         };
         if (!saved.ip) return;
-        const addr = `${saved.ip}:${saved.port}`;
+        lastActiveAddr = `${saved.ip}:${saved.port}`;
 
-        // Check if device already exists in store (avoid duplicates)
-        const existing = useDeviceStore.getState().devices.find((d) => d.ipAddress === addr);
+        // Find the device in the store (should exist from step 1, or reconnect)
+        const existing = useDeviceStore.getState().devices.find((d) => d.ipAddress === lastActiveAddr);
         if (existing) {
-          if (!existing.connected) {
+          setActiveDevice(existing.id);
+          if (existing.connected) {
+            setConnectionStatus("connected");
+          } else {
+            // Try to reconnect the active device
             try {
-              const result = (await api.connectDevice(addr)) as {
+              const result = (await api.connectDevice(lastActiveAddr)) as {
                 id: number;
                 hostname: string;
                 ip: string;
@@ -51,49 +94,17 @@ export function useAutoConnect(): void {
               });
               setActiveDevice(result.id);
               setConnectionStatus("connected");
-              api.saveDeviceInfo(result.hostname, result.ip, result.port).catch(() => {});
             } catch {
               // Stay disconnected
             }
-          } else {
-            // Already connected — just ensure it's the active device
-            setActiveDevice(existing.id);
           }
-          return;
-        }
-
-        try {
-          const result = (await api.connectDevice(addr)) as {
-            id: number;
-            hostname: string;
-            ip: string;
-            port: number;
-          };
-          if (cancelled) return;
-          addDevice({
-            id: result.id,
-            hostname: result.hostname,
-            ipAddress: `${result.ip}:${result.port}`,
-            connected: true
-          });
-          setActiveDevice(result.id);
-          setConnectionStatus("connected");
-          api.saveDeviceInfo(result.hostname, result.ip, result.port).catch(() => {});
-        } catch {
-          if (cancelled) return;
-          addDevice({
-            id: placeholderId++,
-            hostname: saved.hostname,
-            ipAddress: addr,
-            connected: false
-          });
         }
       } catch {
-        // No saved state — first launch
+        // No saved active device
       }
     }
 
-    restoreDevice();
+    restoreDevices();
     return () => {
       cancelled = true;
     };
