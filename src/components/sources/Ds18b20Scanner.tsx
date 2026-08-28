@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Loader2 } from "lucide-react";
-import { api, type Ds18b20Device } from "../../lib/api";
+import { api, type Ds18b20Device, type SourceState } from "../../lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,10 +11,12 @@ interface Ds18b20ScannerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   deviceId: number;
+  sources: SourceState[];
   onAssign: (device: Ds18b20Device) => void;
+  onEdit: (source: SourceState) => void;
 }
 
-export function Ds18b20Scanner({ open, onOpenChange, deviceId, onAssign }: Ds18b20ScannerProps) {
+export function Ds18b20Scanner({ open, onOpenChange, deviceId, sources, onAssign, onEdit }: Ds18b20ScannerProps) {
   const { showToast } = useToast();
   const [devices, setDevices] = useState<Ds18b20Device[]>([]);
   const [scanning, setScanning] = useState(false);
@@ -25,6 +27,15 @@ export function Ds18b20Scanner({ open, onOpenChange, deviceId, onAssign }: Ds18b
   const [editing, setEditing] = useState(false);
 
   const gpioKey = `ds18b20_gpio_${deviceId}`;
+
+  // Build ROM code → source lookup for pairing scanned devices with existing sources
+  const sourceByRom = useMemo(() => {
+    const map = new Map<string, SourceState>();
+    for (const s of sources) {
+      if (s.rom_code) map.set(s.rom_code, s);
+    }
+    return map;
+  }, [sources]);
 
   // Load saved GPIO from app state when dialog opens
   useEffect(() => {
@@ -48,6 +59,16 @@ export function Ds18b20Scanner({ open, onOpenChange, deviceId, onAssign }: Ds18b
     setScanning(true);
     setDevices([]);
     try {
+      // Auto-configure DS18B20 bus GPIO if we have a saved value.
+      // On fresh/erased devices ds18b20_ref is NULL until configDs18b20 is called.
+      // The firmware config endpoint is idempotent (returns OK if already initialized).
+      if (configured) {
+        try {
+          await api.configDs18b20(deviceId, parseInt(busGpio, 10));
+        } catch {
+          // Ignore — scan will fail with a clearer error if bus is truly broken
+        }
+      }
       const results = await api.scanDs18b20(deviceId);
       setDevices(results);
       setScanned(true);
@@ -114,7 +135,7 @@ export function Ds18b20Scanner({ open, onOpenChange, deviceId, onAssign }: Ds18b
           </div>
 
           {/* Scan button */}
-          <Button onClick={handleScan} disabled={scanning}>
+          <Button onClick={handleScan} disabled={scanning || (!configured && !busGpio.trim())}>
             {scanning && <Loader2 size={16} className="animate-spin" />}
             {scanning ? "Scanning..." : "Scan Bus"}
           </Button>
@@ -125,18 +146,30 @@ export function Ds18b20Scanner({ open, onOpenChange, deviceId, onAssign }: Ds18b
 
         {devices.length > 0 && (
           <div className="space-y-2">
-            {devices.map((device) => (
-              <div key={device.rom_code} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">Device {device.index}</div>
-                  <div className="mt-0.5 font-mono text-sm text-foreground">{device.rom_code}</div>
-                  <div className="mt-0.5 text-xs text-muted-foreground">{device.temp_c.toFixed(1)} °C</div>
+            {devices.map((device) => {
+              const paired = sourceByRom.get(device.rom_code);
+              return (
+                <div key={device.rom_code} className="flex items-center justify-between rounded-lg border border-border bg-card p-3">
+                  <div>
+                    <div className="text-xs text-muted-foreground">
+                      Device {device.index}
+                      {paired && <span className="ml-2 text-primary">· {paired.name}</span>}
+                    </div>
+                    <div className="mt-0.5 font-mono text-sm text-foreground">{device.rom_code}</div>
+                    <div className="mt-0.5 text-xs text-muted-foreground">{device.temp_c.toFixed(1)} °C</div>
+                  </div>
+                  {paired ? (
+                    <Button size="sm" variant="outline" onClick={() => onEdit(paired)}>
+                      Edit
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={() => onAssign(device)}>
+                      Assign
+                    </Button>
+                  )}
                 </div>
-                <Button size="sm" onClick={() => onAssign(device)}>
-                  Assign
-                </Button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 

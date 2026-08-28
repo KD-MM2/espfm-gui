@@ -178,7 +178,14 @@ export function SourcesPage() {
       />
 
       {/* Scanner modal */}
-      {activeDeviceId != null && <Ds18b20Scanner open={showScanner} onOpenChange={setShowScanner} deviceId={activeDeviceId} onAssign={handleAssignFromScanner} />}
+      {activeDeviceId != null && <Ds18b20Scanner
+        open={showScanner}
+        onOpenChange={setShowScanner}
+        deviceId={activeDeviceId}
+        sources={sources}
+        onAssign={handleAssignFromScanner}
+        onEdit={(source) => { setShowScanner(false); handleEdit(source); }}
+      />}
     </div>
   );
 }
