@@ -12,6 +12,7 @@ interface FanListProps {
   onEdit: (fan: FanState) => void;
   onDelete: (fan: FanState) => void;
   onToggle: (fan: FanState) => void;
+  onCreateFirst?: () => void;
 }
 
 function FanCard({ fan, curves, onEdit, onDelete, onToggle }: { fan: FanState; curves: CurveState[]; onEdit: (fan: FanState) => void; onDelete: (fan: FanState) => void; onToggle: (fan: FanState) => void }) {
@@ -69,9 +70,9 @@ function FanCard({ fan, curves, onEdit, onDelete, onToggle }: { fan: FanState; c
   );
 }
 
-export function FanList({ fans, curves, onEdit, onDelete, onToggle }: FanListProps) {
+export function FanList({ fans, curves, onEdit, onDelete, onToggle, onCreateFirst }: FanListProps) {
   if (fans.length === 0) {
-    return <EmptyState icon={<Fan size={40} />} title="No fans configured" description="Create your first fan to get started" />;
+    return <EmptyState icon={<Fan size={40} />} title="No fans configured" description="Create your first fan to get started" actionLabel="Create your first fan" onAction={onCreateFirst} />;
   }
 
   return (
