@@ -158,7 +158,7 @@ export function FansPage() {
       </div>
 
       {/* Fan list */}
-      <FanList fans={fans} curves={curves} onEdit={handleEdit} onDelete={handleDelete} onToggle={handleToggle} />
+      <FanList fans={fans} curves={curves} onEdit={handleEdit} onDelete={handleDelete} onToggle={handleToggle} onCreateFirst={() => { setEditingFan(null); setShowForm(true); }} />
 
       {/* Form dialog */}
       <FanForm
